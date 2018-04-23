@@ -1,0 +1,8 @@
+<%-include('../header.ejs')%>
+<h3><%=__('Welcome')%>  <%= data.fullname %></h3>
+<h4><%=__('Your Pateast account has been created successfully and is ready to use')%></h4>
+<p><%=__('Email')%> - <%= data.email %></p>
+<p><%=__('User Name')%> - <%= data.username %></p>
+<p><%=__('Password')%> - <%= data.password %></p>
+<a href="<%= data.link %>"><%=__('Please login and reset your password')%></a>
+<%-include('../footer.ejs')%>

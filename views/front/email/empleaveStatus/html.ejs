@@ -1,0 +1,29 @@
+<%-include('../header.ejs')%>
+<% 
+var halfday = {1:'First Half', 2:'Second Half' }
+var status = {0:'Pending', 1:'Approved', 2:'Canceled', 3:'Rejected' } 
+var leavetype = __(status[data.leavestatus]);
+%>
+<p><%=__('Hi')%>,</p>
+<% if(data.sendMailTo === 'institute') { %>
+<p><%=__('{{fullname}} has {{status}} leave request for following days', {fullname:data.fullname, status: leavetype})%>:</p>
+<% } else { %>
+<p><%=__('Admin has {{status}} your leave request for following days', {status: leavetype})%>:</p>
+<% } %>
+<p><%=__('Start Date')%><span style="margin: 0 60px"><%=__('End Date')%></span><%=__('Duration')%></p>
+<p>======================================================</p>
+<p><%=moment(data.start_date).format('YYYY-MM-DD')%><span style="margin: 0 50px"><%=moment(data.end_date).format('YYYY-MM-DD')%></span>
+<% if(data.halfday) { %>
+<%=__('Halfday')%>(<%=__(halfday[data.halfday])%>)
+<% } else{ %>
+<%=data.duration%>
+<% } %>
+</p>
+<p><%=__('Leave type')%>: <%=data.leavetype%></p>
+
+<% if(data.reject_reason && data.reject_reason !== null) { %>
+<p><%=__('Reason')%>: <%=data.reject_reason%></p>
+<% } %>
+<p></p>
+<p><%=__('Thank you')%>.</p>
+<%-include('../footer.ejs')%>
