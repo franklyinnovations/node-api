@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="<%=user.language.code%>">
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+		<title><%=__('Pateast')%></title>
+
+		<meta name="description" content="PaTeaSt">
+		<meta name="author" content="PaTeaSt">
+
+		<style>
+			body {
+				margin: 0;
+				padding: 0;
+				direction: <%=user.language.direction%>
+			}
+			table {
+				font-family: arial, sans-serif;
+			}
+			@media only screen and (max-width:767px) {
+				.width-full {width: 600px;}
+			}
+			@media only screen and (max-width:640px) {
+				.width-full {width: 100%;}
+			}
+			@media only screen and (max-width:600px) {
+				.d-block {
+					width: 16%;
+					margin-bottom: 10px;
+					display: inline-block;
+				}
+			}
+			@media only screen and (max-width:550px) {
+				.d-block { width: 31%;}
+			}
+			@media only screen and (max-width:450px) {
+				.d-block-f {
+					width: 100%;
+					margin-bottom: 10px;
+					display: inline-block;
+					text-align: center !important;
+				}
+			}
+			@media only screen and (max-width:400px) {
+				.d-block {width: 36%;}
+			}
+		</style>
+
+
+	</head>
+	<body>
+		<table cellpadding="0" cellspacing="0" width="100%" border="0" style="border-collapse: collapse; font-family:arial, sans-serif;" align="center">
+			<tbody>
+				<tr>
+					<td align="center" style="background:#f5f6f6; padding-top:15px; padding-bottom:15px;">
+						<table class="width-full" cellpadding="0" cellspacing="0" width="600" border="0" style=" border-collapse: collapse;">
+							<tr>
+								<td>
+										<img src="https://www.pateast.co/images/pateast-logo.png" alt="" />
+								</td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+				<tr>
+					<td style="padding-top: 15px;">
+						 <table class="width-full" cellpadding="0" cellspacing="0" width="600" border="0" style=" border-collapse: collapse;" align="center">
+								<tr>
+									<td style="font-size:14px;color:#606060;text-align:left;line-height:24px; font-family:arial, sans-serif; padding: 20px 0; border-top: 3px solid #ea414d;" >
+										 <table class="width-full" cellpadding="0" cellspacing="0" width="100%" border="0" style=" border-collapse: collapse;" align="center">
+											<tr>
+												<td>
+													<%=__('Dear')%> <b><%=user.userdetails[0].fullname%></b>
+												</td>
+												<td align="right">
+													<span style="color: #000;"><%=__('Time Zone')%>:</span>
+													<%=institute.timezone%>
+												</td>
+											</tr>
+											<tr>
+												<td>
+													<span style="color: #000;"><%=__('Institute')%>:</span>
+													<%=institute.institutedetails[0].name%>
+												</td>
+												<td align="right">
+													<span style="color: #000;"><%=__('Date')%>:</span>
+													<%=day.format(institute.date_format)%>
+												</td>
+											</tr>
+									 </table>                     
+									</td>
+								</tr>
+								<tr>
+									<td style="font-size:20px; color:#fff;text-align:center;line-height:30px; font-family:arial, sans-serif; padding: 10px 0; border-bottom: 4px solid #fff; background: #3a3a3a;" >
+										<%=__('Pateast - Digest')%>
+									</td>
+								</tr>

@@ -7,6 +7,9 @@ module.exports = function (sequelize, DataType) {
 			primaryKey: true,
 			autoIncrement: true
 		},
+		masterId: {
+			type: DataType.INTEGER
+		},
 		data: {
 			type: DataType.TEXT,
 			get: function () {

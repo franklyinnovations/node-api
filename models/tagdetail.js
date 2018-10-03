@@ -1,7 +1,7 @@
 'use strict';
 
-module.exports = function (sequelize, DataTypes) {
-	return sequelize.define('tagdetail', {
+module.exports = function (sequalize, DataTypes) {
+	return sequalize.define('tagdetail', {
 		id: {
 			type: DataTypes.INTEGER
 			, primaryKey: true
@@ -14,19 +14,18 @@ module.exports = function (sequelize, DataTypes) {
 			type: DataTypes.INTEGER
 		}
 		, title: {
-			type: DataTypes.STRING(140)
+			type: DataTypes.STRING(20)
 			, validate: {
 				valid: function (value, next) {
 					value = value.trim();
 					if (value.length === 0) {
 						next('isRequired');
-					} else if (value.length > 140) {
-						next('Please enter no more than 140 characters');
+					} else if (value.length > 100) {
+						next('Title length can not be more than 100.');
 					} else {
 						next();
 					}
-				},
-				//isUnique: sequelize.validateIsUnique('title', 'isUniqueTitle'),
+				}
 			}
 		}
 		, description : {
@@ -36,8 +35,8 @@ module.exports = function (sequelize, DataTypes) {
 					msg: 'isRequired'
 				},
 				isValid:function(value, next){
-					if (value !== '' && value.length > 200) {
-					  next('Please enter no more than 200 characters');
+					if (value !== '' && value.length > 140) {
+					  next('Description length can not be more than 140.');
 					} else {
 					  next();
 					}

@@ -4,9 +4,9 @@ var language = require('./language');
 var mail = require('./mail');
 
 function Contacts() {
-  /*
-   * save
-  */
+/*
+ * save
+*/
   this.sentQuery = function(req, res){
     var contact = models.contact.build(req);
     var errors = [];
@@ -27,7 +27,7 @@ function Contacts() {
         var uniqueError = merged.filter(function(elem, pos) {return merged.indexOf(elem) == pos;});
         if (uniqueError.length === 0) {
           models.contact.create(req).then(function(data){
-          var mailData = {email: req.emailto, subject: "Wikicare: Contact Us", list: req};
+          var mailData = {email: req.emailto, subject: "PATEAST: Contact Us", list: req};
           mail.sendContactMail(mailData, req.lang);
           res({status:true, message:"Your Query has been submitted Successfully", data:data});
           }).catch(() => res({status:false, error: true, error_description: language.lang({key: "Internal Error", lang: req.lang}), url: true}));
@@ -42,9 +42,9 @@ function Contacts() {
   };
 
 
-  /*
-   * list of all
-  */
+/*
+ * list of all
+*/
  this.list = function(req, res) {
     var setPage = req.app.locals.site.page;
     var currentPage = 1;
@@ -57,9 +57,10 @@ function Contacts() {
     } else {
         pag = 0;
     }
-     /*
-    * for  filltering
-    */
+    
+/*
+* for  filltering
+*/
     var reqData = req.body;
 	if(typeof req.body.data !== 'undefined'){
 		reqData = JSON.parse(req.body.data);
@@ -87,27 +88,63 @@ function Contacts() {
     //isWhere['delete'] = 1;
     orderBy = 'id DESC';
 
+    models.contact.belongsTo(models.country);
+    models.country.hasMany(models.countrydetail);
+
     models.contact.findAndCountAll({
       where: isWhere.contact,
       order: [
         ['id', 'DESC']
       ],
       limit: setPage,
-      offset: pag, subQuery: false
+      offset: pag,
     }).then(function(result){
       var totalData = result.count;
       var pageCount = Math.ceil(totalData / setPage);
-      res({data:result.rows, totalData: totalData, pageCount: pageCount,  pageLimit: setPage, currentPage:currentPage });
-    }).catch(() => res({status:false, error: true, error_description: language.lang({key: "Internal Error", lang: reqData.lang}), url: true}));
+      res({
+        data:result.rows,
+        totalData: totalData,
+        pageCount: pageCount,
+        pageLimit: setPage,
+        currentPage:currentPage
+      });
+    }).catch(() => res({
+      status:false,
+      error: true,
+      error_description: language.lang({key: "Internal Error", lang: reqData.lang}),
+      url: true
+    }));
   };
 
   /*
    * get By ID
   */
  this.getById = function(req, res) {
-    models.contact.find({where:{id:req.id}}).then(function(data){
+    models.contact.belongsTo(models.country);
+    models.country.hasMany(models.countrydetail);
+    models.contact.find({
+      include: [{
+        model: models.country,
+        required: false,
+        attributes: ['id'],
+        include: [{
+          model: models.countrydetail,
+          attributes: ['name'],
+          required: false,
+          where: language.buildLanguageQuery(
+            {}, req.langId, '`country`.`id`', models.countrydetail, 'countryId'
+          )
+        }]
+      }],
+      where:{id:req.id}
+    }).then(function(data){
       res(data);
-    }).catch(() => res({status:false, error: true, error_description: language.lang({key: "Internal Error", lang: req.lang}), url: true}));
+    }).catch(() => res({
+      status:false,
+      error: true,
+      error_description: language.lang({key: "Internal Error", lang: req.lang}),
+      url: true
+    }));
   };
 }
 

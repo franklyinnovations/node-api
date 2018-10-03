@@ -5,6 +5,7 @@ var multer = require('multer');
 var upload = multer();
 var oauth = require('../../config/oauth');
 var auth = require('../../config/auth');
+var log = require('../../controllers/log');
 
 /* GET  */
 router.post('/', oauth.oauth.authorise(), upload.array(), function (req, res) {
@@ -26,7 +27,7 @@ router.post('/save', oauth.oauth.authorise(), upload.array(), function (req, res
 	if(typeof req.body.data !== 'undefined'){
 		data = JSON.parse(req.body.data);
 	}
-    req.roleAccess = {model:'role', action:'add'};
+    req.roleAccess = {model:'role', action:['add', 'edit']};
     auth.checkPermissions(req, function(isPermission){
         if (isPermission.status === true) {
             role.save(data, function(result){
@@ -128,6 +129,18 @@ router.post('/list/:masterId', upload.array(), function (req, res) {
     });
 });
 
+/* getEmpAttendanceRole */
+router.post('/attrolelist/:masterId', upload.array(), function (req, res) {
+    var data = req.body;
+    if(typeof req.body.data !== 'undefined'){
+        data = JSON.parse(req.body.data);
+    }
+    data.masterId = req.params.masterId;
+    role.getEmpAttendanceRole(data, function(result){
+        res.send(result);
+    });
+});
+
 /* getAllRole */
 router.post('/getAutoRoleId/:id/:slug', upload.array(), function (req, res) {
     var data = req.body;
@@ -138,6 +151,20 @@ router.post('/getAutoRoleId/:id/:slug', upload.array(), function (req, res) {
     data.slug = req.params.slug;
     role.getAutoRoleId(data, function(result){
         res.send(result);
+    });
+});
+
+router.post('/remove', oauth.oauth.authorise(), (req, res) => {
+    req.roleAccess = {model:'role', action: 'delete'};
+    auth.checkPermissions(req, isPermission => {
+        if (isPermission.status === true) {
+            Promise.resolve(req.body)
+            .then(role.remove)
+            .then(result => res.send(result))
+            .catch(err => res.send(log(req, err)));
+        } else {
+            res.send(isPermission);
+        }
     });
 });
 

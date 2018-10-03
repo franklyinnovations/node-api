@@ -25,14 +25,17 @@ function Auth() {
                     res({status:true});
                 }
                 else {
-                    res({status:false, message:language.lang({key:"accessDenied", lang:formdata.lang})});
+                    res({
+                        status:false,
+                        message:language.lang({key:"accessDenied", lang:formdata.lang}),
+                        code: 401,
+                    });
                 }
             });
         }
     };
     
     this.checkPermissions = function(req, res){
-
         var data = req.body;
         if(typeof req.body.data !== 'undefined'){
          data = JSON.parse(req.body.data);
@@ -42,19 +45,42 @@ function Auth() {
          if(!auth_token) {
             res({status:false, error:true, url:true, error_description:language.lang({key:"accessDenied", lang:data.lang})});
         }else if(auth_token) {
-            models.oauthaccesstoken.findOne({include: [{model:models.user, attributes:['roleId'], row:true}], where:{access_token:token[1]}, attributes:['user_id'], row:true}).then(function(userData){
-                if (userData.user.roleId !==0) {
-                    models.permission.find({where:{model:req.roleAccess.model, action:req.roleAccess.action}}).then(function(result){
-                        if (result !==null) {
-                            models.rolepermission.find({where:{roleId:userData.user.roleId, permissionId:result.id}}).then(function(roleData){
-                                if (roleData !==null) {
+            let action = req.roleAccess.action;
+			if (action instanceof Array) action = {$in: action};
+            models.oauthaccesstoken.findOne({include: [{model:models.user, attributes:['roleId']}], where:{access_token:token[1]}, attributes:['user_id'], row:true}).then(function(userData){
+                if (userData.user.roleId !== 0) {
+                    models.permission.findAll({where:{model:req.roleAccess.model, action}})
+                    .then(function(results){
+                        if (results.length !== null) {
+                            models.rolepermission.count({
+                                where: {
+                                    roleId: userData.user.roleId,
+                                    permissionId: {
+                                        $in: results.map(result => result.id)
+                                    }
+                                }
+                            })
+                            .then(function(count){
+                                if (count !== 0) {
                                     res({status:true});
                                 } else {
-                                    res({status:false, error:true, url:true, error_description:language.lang({key:"accessDenied", lang:data.lang})});
+                                    res({
+                                        status:false,
+                                        error:true,
+                                        url:true,
+                                        error_description:language.lang({key:"accessDenied", lang:data.lang}),
+                                        code: 401,
+                                    });
                                 }
                             });
                         } else {
-                            res({status:false, error:true, url:true, error_description:language.lang({key:"wrongAction", lang:data.lang})});
+                            res({
+                                status:false,
+                                error:true,
+                                url:true,
+                                error_description:language.lang({key:"wrongAction", lang:data.lang}),
+                                code: 401,
+                            });
                         }
                     });
                 } else {

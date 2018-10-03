@@ -1,0 +1,242 @@
+<%
+function getPaymentMethod(feesubmission) {
+	if (feesubmission.mode === 0) {
+		return __('Cash');
+	} else if (feesubmission.mode === 1) {
+		return __('Cheque') + ' # ' + feesubmission.cheque;
+	} else if (feesubmission.mode === 2) {
+		return __('DD') + ' # ' + feesubmission.cheque;
+	} else if (feesubmission.mode === 3) {
+		return __('Challan') + ' # ' + feesubmission.id;
+	}
+}
+-%>
+<!DOCTYPE html>
+<html dir="<%=dir%>">
+<head>
+	<title><%=__('Invoice')%></title>
+	<style type="text/css">
+		* {
+			box-sizing: border-box;
+		}
+
+		body {
+			margin: 15px;
+			font-size: 16px;
+			font-family: "Lato", Helvetica, Arial, sans-serif;
+		}
+
+		#container {
+			margin: 0 auto;
+			width: 80%;
+			padding: 15px;
+			border: 2px solid black;
+		}
+
+		@media print {
+			#container {
+				width: 100%;
+			}
+		}
+
+		.row > div {
+			float: left;
+			width: 50%;
+			padding: 15px 0;
+		}
+
+		.row::after {
+			content: ' ';
+			display: block;
+			clear: both;
+		}
+
+		.info, .invoice {
+			width: 100%;
+			border-collapse: collapse;
+		}
+
+		.info td, .invoice td, .info th, .invoice th {
+			padding: 0.25em;
+			border: 1px solid black;
+			direction: auto;
+		}
+
+		.invoice {
+			margin-top: 1em;
+		}
+
+		th {
+			text-align: <%=dir === 'rtl' ? 'right' : 'left'%>;
+		}
+
+		.label {
+			font-weight: bold;
+		}
+
+		.invoice-title {
+			font-size: 24px;
+			text-align: center;
+		}
+
+		.institute-name {
+			font-weight: bold;
+		}
+
+		.institute-address {
+			font-size: 14px;
+		}
+
+		.text-right {
+			text-align: right;
+		}
+
+		td.label {
+			width: 20%;
+		}
+
+		td.value {
+			width: 30%;
+		}
+	</style>
+</head>
+<body>
+	<div id='container'>
+		<div class="row">
+			<div>
+				<div class="institute-name">
+					<%=institute.institutedetails[0].name%>
+				</div>
+				<div class="institute-address">
+					<%=institute.institutedetails[0].address%>
+				</div>
+			</div>
+			<div class="text-right">
+				<div class="institute-website">
+					<span class="label"><%=__('Website')%></span>
+					<span class="value">
+						<%=institute.website_url%>	
+					</span>
+				</div>
+				<div class="institute-phone">
+					<span class="label"><%=__('Contact No.')%></span>
+					<span class="value">
+						<%=institute.phone%>
+					</span>
+				</div>
+			</div>
+		</div>
+		<h1 class="invoice-title">
+			<%=__('FEE BILL FOR SESSION')%> <%=academicsession.academicsessiondetails[0].name%>
+		</h1>
+		<table class="info">
+			<tbody>
+				<tr>
+					<td class="label"><%=__('Invoice / Reciept No.')%></td>
+					<td class="value">
+						<%=feesubmission.id%>
+					</td>
+					<td class="label">
+						<%=__('Date')%>
+					</td>
+					<td class="value">
+						<%=moment(feesubmission.date).format(institute.date_format)%>
+					</td>
+				</tr>
+				<tr>
+					<td class="label"><%=__('Name')%></td>
+					<td class="value">
+						<%=feesubmission.student.user.userdetails[0].fullname%>
+					</td>
+					<td class="label"><%=__('Enrollment No.')%></td>
+					<td class="value">
+						<%=feesubmission.student.enrollment_no%>
+					</td>
+				</tr>
+				<tr>
+					<td class="label"><%=__('Father')%></td>
+					<td class="value">
+						<%=feesubmission.student.studentdetails[0].father_name%>
+					</td>
+					<td class="label"><%=__('Address')%></td>
+					<td class="value">
+						<%=feesubmission.student.studentdetails[0].address%>
+					</td>
+				</tr>
+				<tr>
+					<td class="label"><%=__('Payment Method')%></td>
+					<td class="value">
+						<%=getPaymentMethod(feesubmission)%>
+					</td>
+					<td class="label"><%=__('Bank Name')%></td>
+					<td class="value">
+						<%=feesubmission.bank%>
+					</td>
+				</tr>
+				<tr>
+					<td class="label"><%=__('Remarks')%></td>
+					<td class="value" colspan="3">
+						<%=feesubmission.remarks%>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+		<table class="invoice">
+			<thead>
+				<tr>
+					<th><%=__('Particulars')%></th>
+					<th><%=__('Amount')%></th>
+				</tr>
+			</thead>
+			<tbody>
+			<%
+				let total = 0;
+				feesubmission.feesubmissionrecords.forEach(feesubmissionrecord => {
+					total += feesubmissionrecord.amount;
+			-%>
+				<tr>
+					<td>
+						<%=feesubmissionrecord.feehead.feeheaddetails[0].name%>
+						# <%=feesubmissionrecord.installment + 1%>
+					</td>
+					<td>
+						<%=feesubmissionrecord.amount%>
+					</td>
+				</tr>
+				<% feesubmissionrecord.feesubmissiondiscounts.forEach(feesubmissiondiscount => {
+					total -= feesubmissiondiscount.amount; -%>
+					<tr>
+						<td>
+							<%=feesubmissiondiscount.feediscount.feediscountdetails[0].name%>
+						</td>
+						<td>
+							-<%=feesubmissiondiscount.amount%>
+						</td>
+					</tr>
+				<%}) -%>
+				<% feesubmissionrecord.feesubmissionpenalties.forEach(feesubmissionpenalty => {
+					total += feesubmissionpenalty.amount; -%>
+					<tr>
+						<td>
+							<%=feesubmissionpenalty.feepenalty.feepenaltydetails[0].name%>
+						</td>
+						<td>
+							<%=feesubmissionpenalty.amount%>
+						</td>
+					</tr>
+				<% }) -%>
+			<% }) -%>
+			</tbody>
+			<tfoot>
+				<tr>
+					<th><%=__('Total')%></th>
+					<th><%=total%></th>
+				</tr>
+			</tfoot>
+		</table>
+	</div>
+	<script type="text/javascript">
+		document.body.style.zoom = 0.60;
+	</script>
+</body>
+</html>

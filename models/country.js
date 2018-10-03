@@ -22,7 +22,11 @@ module.exports=  function(sequelize, DataTypes){
         notEmpty: {
           msg:'isRequired'
         },
-        isUnique: sequelize.validateIsUnique('code', 'alreadyExist')
+        len: {
+          args: [1, 20],
+          msg: 'Length can not be more than 20.',
+        },
+        isUnique: sequelize.validateIsUnique('code', 'isUnique')
       }
     },
     iso_code: {
@@ -33,7 +37,7 @@ module.exports=  function(sequelize, DataTypes){
         notEmpty: {
           msg:'isRequired'
         },
-        isUnique: sequelize.validateIsUnique('iso_code', 'alreadyExist')
+        isUnique: sequelize.validateIsUnique('iso_code', 'isUnique')
       }
     },
     is_active: {

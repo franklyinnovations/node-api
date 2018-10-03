@@ -15,6 +15,10 @@ module.exports=  function(sequelize, DataTypes){
         notEmpty: {
           msg:'isRequired'
         },
+        len: {
+          args: [1, 150],
+          msg: 'Length can not be more than 150.',
+        },
         isExist: function(value , next){
           this.Model.find({where:{id:{$ne: this.id}, name:value, masterId:this.masterId}}).then(function(data){
             if (data !== null) {
@@ -24,20 +28,22 @@ module.exports=  function(sequelize, DataTypes){
             }
           });
         },
-        isLocation:function(value, next){
-          if (value !== '' && this.routeaddresse === '') {
-            next('atLeastOneLocation');
-          } else {
-            next();
-          }
-        }
       }
     },
     is_active: {
       type: DataTypes.STRING
     },
     routeaddresse: {
-      type: DataTypes.VIRTUAL
+      type: DataTypes.VIRTUAL,
+      validate: {
+        isLocation:function(value, next){
+          if (this.name !== '' && this.name.length <= 150 && value === '') {
+            next('Please select at least two locations.');
+          } else {
+            next();
+          }
+        }
+      }
     }
   },{
     tableName: 'routes'

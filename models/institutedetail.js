@@ -18,11 +18,24 @@ module.exports=  function(sequelize, DataTypes){
       validate: {
         notEmpty: {
           msg: 'isRequired'
+        },
+        len: {
+          args: [1, 150],
+          msg: 'Length can not be more than 150.',
         }
       }
     },
     alias: {
-      type: DataTypes.STRING
+      type: DataTypes.STRING,
+      validate: {
+        len: function(value, next){
+          if (value !== '' && value.length > 50) {
+            next('Length can not be more than 50.');
+          } else {
+            next();
+          }
+        }
+      }
     },
     address: {
       type: DataTypes.STRING,
@@ -31,6 +44,9 @@ module.exports=  function(sequelize, DataTypes){
           msg: 'isRequired'
         }
       }
+    },
+    tagline: {
+      type: DataTypes.STRING,
     },
     google_address: {
       type: DataTypes.STRING,

@@ -1,35 +1,38 @@
 'use strict';
 
-const io = require('socket.io')(),
+const
+	io = require('socket.io')(),
+	models = require('../models'),
 	chat = require('./chat')(io),
-	models = require('../models');
+	transport = require('./transport')(io);
+
 
 io.use((socket, next) => {
 	socket.handshake.headers.token = socket.handshake.headers.token ||
 		socket.handshake.query.token;
 	if (!socket.handshake.headers.token) {
-		socket.user = null;
-		next();
+		next(new Error('INVALID_ACCESS_TOKEN'));
 	} else {
 		models.oauthaccesstoken.belongsTo(models.user, {foreignKey: 'user_id'});
 		models.oauthaccesstoken.findOne({
 			where: {access_token: socket.handshake.headers.token},
 			attributes: ['access_token'],
-			include: [{model: models.user, attributes: ['id', 'user_type']}]
+			include: [{model: models.user, attributes: ['id', 'masterId', 'user_type']}]
 		})
-		.then(oauthaccesstoken => {
-			socket.user = (oauthaccesstoken && oauthaccesstoken.user) || null;
-			next();
-		})
-		.catch(console.log);
+			.then(oauthaccesstoken => {
+				socket.user = (oauthaccesstoken && oauthaccesstoken.user) || null;
+				if (socket.user === null)
+					next(new Error('INVALID_ACCESS_TOKEN'));
+				else
+					next();
+			})
+			.catch(console.log);
 	}
 });
 
-io.on('connection', socket => {
-	chat(socket);
-	socket.on('error', console.log);
-});
+io.on('connection', chat);
+io.on('connection', transport);
 
 module.exports = function (server) {
-	io.attach(server, {pingTimeout:30000 , pingInterval: 25000});
+	io.attach(server);
 };

@@ -36,7 +36,10 @@ module.exports = function (sequelize, DataType) {
 		},
 		is_locked: {
 			type: DataType.INTEGER(6)
-		}
+		},
+		timetableallocationId: {
+			type: DataType.VIRTUAL,
+		},
 	}, {
 		tableName: 'class_reports',
 		indexes: [{

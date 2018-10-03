@@ -1,12 +1,11 @@
 var city = require('../../controllers/city');
-var state = require('../../controllers/state');
 var express = require('express');
 var router = express.Router();
 var multer = require('multer');
 var upload = multer();
 var oauth = require('../../config/oauth');
 var auth = require('../../config/auth');
-var NodeGeocoder = require('node-geocoder')
+
 /* GET  */
 router.post('/', oauth.oauth.authorise(), upload.array(), function (req, res) {
     req.roleAccess = {model:'city', action:'view'};
@@ -21,70 +20,22 @@ router.post('/', oauth.oauth.authorise(), upload.array(), function (req, res) {
     });
 });
 
-
-
-/**
- * @api {post} /admin/city/cityList get city list
- * @apiName cityList
- * @apiGroup City
- * @apiParam {String} title required
- * @apiParam {integer} page required
- * 
- */
-router.post('/cityList', oauth.oauth.authorise(), upload.array(), function (req, res) {
-    //req.roleAccess = {model:'city', action:'view'};
-    //auth.checkPermissions(req, function(isPermission){
-       // if (isPermission.status === true) {
-            city.cityList(req, function(result){
-                res.send(result);
-            });
-       // } else {
-        //    res.send(isPermission);
-        //}
-   // });
-});
-
 /* save  */
 router.post('/save', oauth.oauth.authorise(), upload.array(), function (req, res) {
     var data = req.body;
 	if(typeof req.body.data !== 'undefined'){
 		data = JSON.parse(req.body.data);
-    }
-    
-    //req.roleAccess = {model:'city', action:'add'};
-    //auth.checkPermissions(req, function(isPermission){
-    //if (isPermission.status === true) {
-
-        var options = {
-            provider: 'google',
-           
-            // Optional depending on the providers
-            httpAdapter: 'https', // Default
-            apiKey: 'AIzaSyAlNp9k6nA5z03BiEYi9djp3yZpMg5asVk', // for Mapquest, OpenCage, Google Premier
-            formatter: null         // 'gpx', 'string', ...
-          };
-            var geocoder = NodeGeocoder(options);           
-                state.getById({id:data.stateId}, function(stateResult){
-                    geocoder.geocode(stateResult.country.countrydetails[0].name+','+stateResult.statedetails[0].name+','+data.city_detail.name, function(err, response) {
-                       
-                       if(response.length>0){
-                        data.latitude = response[0].latitude || '';
-                        data.longitude = response[0].longitude || '';
-                       }
-                    city.save(data, function(result){ 
-                        res.send(result);
-                    })
-                })  
-            });
-
-
-          /*  city.save(data, function(result){
+	}
+    req.roleAccess = {model:'city', action:['add', 'edit']};
+    auth.checkPermissions(req, function(isPermission){
+        if (isPermission.status === true) {
+            city.save(data, function(result){
                 res.send(result);
-            });*/
-        //} else {
-        //    res.send(isPermission);
-       // }
-   // });
+            });
+        } else {
+            res.send(isPermission);
+        }
+    });
 });
 
 /* add */
@@ -171,18 +122,6 @@ router.post('/listByStateId', upload.array(), function (req, res) {
 		data = JSON.parse(req.body.data);
 	}
     city.getAllCity(data, function(result){
-        res.send(result);
-    });
-});
-
-/* city list by state id  */
-router.post('/getAllCityAtOnce', upload.array(), function (req, res) {
-    console.log("called");
-    var data = req.body;
-  	if(typeof req.body.data !== 'undefined'){
-  		data = JSON.parse(req.body.data);
-  	}
-    city.getAllCityAtOnce(data, function(result){
         res.send(result);
     });
 });

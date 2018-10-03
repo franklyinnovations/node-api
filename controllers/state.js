@@ -156,10 +156,11 @@ function State() {
       ],
       distinct: true,
       limit: setPage,
-      offset: pag, subQuery: false
+      offset: pag
     }).then(function(result){
       var totalData = result.count;
-      var pageCount = Math.ceil(totalData / setPage);
+      var pageCount = Math.ceil(totalData /
+       setPage);
       res({data:result.rows, totalData: totalData, pageCount: pageCount,  pageLimit: setPage, currentPage:currentPage });
     }).catch(() => res({status:false, error: true, error_description: language.lang({key: "Internal Error", lang: reqData.lang}), url: true}));
   };
@@ -169,25 +170,10 @@ function State() {
   */
  this.getById = function(req, res) {
     models.state.hasMany(models.statedetail);
-      models.state.belongsTo(models.country);
-      models.country.hasMany(models.countrydetail);
     models.state.find({
-      include: [
-      {
+      include: [{
         model: models.statedetail, 
-        where: language.buildLanguageQuery({}, req.langId, '`state`.`id`', models.statedetail, 'stateId')
-
-      },
-      {
-        model: models.country,
-        include:[
-         { model: models.countrydetail, 
-           where: language.buildLanguageQuery({}, req.langId, '`country`.`id`', models.countrydetail, 'countryId')
-         }
-        ]
-
-      }
-        ], 
+        where: language.buildLanguageQuery({}, req.langId, '`state`.`id`', models.statedetail, 'stateId')}], 
         where:{
           id:req.id
         }}).then(function(data){

@@ -1,0 +1,325 @@
+<%
+console.log(locals);
+	let start = 'left', end = 'right';
+	if (dir === 'rtl') {
+		start = 'right', end = 'left';
+	}	
+-%>
+
+<% function challan(title) {-%>
+	<div>
+		<div class="institute">
+			<div class="title"><%=title%></div>
+			<div class="name"><%=institute.institutedetails[0].name%></div>
+			<div class="address"><%=institute.institutedetails[0].address%></div>
+		</div>
+		<div class="info">
+			<div>
+				<span class="label">
+					<%=__('Challan No.')%>
+				</span>
+				<span class="value">
+					<%=feesubmission.id%>
+				</span>
+			</div>
+			<div>
+				<%=__('School\'s PAN No.')%>
+			</div>
+			<div>
+				<%=__('Date of Deposite')%>
+			</div>
+			<div>
+				<%=__('Amount Transfer to')%>
+			</div>
+		</div>
+		<div class="info">
+			<div>
+				<span class="label">
+					<%=__('Enrollment No.')%>
+				</span>
+				<span class="value">
+					<%=feesubmission.student.enrollment_no%>
+				</span>
+			</div>
+			<div>
+				<span class="label">
+					<%=__('Name')%>
+				</span>
+				<span class="value">
+					<%=feesubmission.student.user.userdetails[0].fullname%>
+				</span>
+			</div>
+			<div>
+				<span class="label">
+					<%=__('Father\'s Name')%>
+				</span>
+				<span class="value">
+					<%=feesubmission.student.studentdetails[0].father_name%>
+				</span>
+			</div>
+			<div>
+				<span class="label">
+					<%=__('Contact No.')%>
+				</span>
+				<span class="value">
+					<%=feesubmission.student.father_contact%>
+				</span>
+			</div>
+		</div>
+		<div class="info">
+			<strong><%=__('DUE FEE DETAIL')%></strong>
+			<table class="invoice">
+				<thead>
+					<tr>
+						<th class="label"><%=__('Particulars')%></th>
+						<th class="value"><%=__('Amount')%></th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td class="label"><%=__('Total Fee Amount')%></td>
+						<td class="value"><%
+							let total = 0;
+							feesubmission.feesubmissionrecords.forEach(feesubmissionrecord => {
+								total += feesubmissionrecord.amount;
+								feesubmissionrecord.feesubmissiondiscounts.forEach(feesubmissiondiscount => {
+									total -= feesubmissiondiscount.amount;
+								});
+								feesubmissionrecord.feesubmissionpenalties.forEach(feesubmissionpenalty => {
+									total += feesubmissionpenalty.amount;
+								});
+							});
+						%><%=total%></td>
+					</tr>
+					<tr>
+						<td class="label"><%=__('Bank Charges')%></td>
+						<td class="value"><%=institute.bank_challan_charges%></td>
+					</tr>
+					<tr>
+						<td class="label"><%=__('Total Payable Fee')%></td>
+						<td class="value"><%=total + parseInt(institute.bank_challan_charges)%></td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<div class="info">
+			<strong><%=__('Cheque Details')%></strong>
+			<div class="detail">
+				<span><%=__('Bank Name')%></span>
+				<span></span>
+			</div>
+			<div class="detail">
+				<span><%=__('Cheque No.')%></span>
+				<span></span>
+			</div>
+			<div class="detail">
+				<span><%=__('Cheque Date')%></span>
+				<span></span>
+			</div>
+		</div>
+		<div class="info">
+			<strong><%=__('DD/PO Details')%></strong>
+			<div class="detail">
+				<span><%=__('DD/PO No')%></span>
+				<span></span>
+			</div>
+			<div class="detail">
+				<span><%=__('DD/PO Date')%></span>
+				<span></span>
+			</div>
+		</div>
+		<div class="info">
+			<strong><%=__('Cash Details')%></strong>
+			<br/>
+			<br/>
+			<table class="cash">
+				<tbody>
+					<tr>
+						<td>2000 &times;</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>500 &times;</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>200 &times;</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>100 &times;</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>50 &times;</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>20 &times;</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>10 &times;</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>&nbsp;</td>
+						<td></td>
+					</tr>
+				</tbody>
+			</table>
+			<div class="detail">
+				<span><%=__('Amount in words')%></span>
+				<span></span>
+			</div>
+			<div class="detail">
+				<span style="opacity: 0">H</span>
+				<span style="margin-<%=start%>: -0.5em;"></span>
+			</div>
+		</div>
+		<div class="info signature">
+			<div>
+				<%=__('Sign of the Depositer')%>
+			</div>
+		</div>
+		<div class="info">
+			<strong>
+				<%=__('For BANK use only')%>
+			</strong>
+			<div class="detail">
+				<span><%=__('Journal Number')%></span>
+				<span></span>
+			</div>
+			<div class="seal"></div>
+			<div style="float: <%=start%>;">
+				<%=__('Seal/Date')%>
+			</div>
+			<div style="float: <%=end%>;">
+				<%=__('Authorized Signatory')%>
+			</div>
+			<div style="clear: both;"></div>
+		</div>
+	</div>
+<%} -%>
+<!DOCTYPE html>
+<html dir="<%=dir%>">
+<head>
+	<title><%=__('Challan')%></title>
+<style type="text/css">
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	font-size: 16px;
+	font-family: "Lato", Helvetica, Arial, sans-serif;
+}
+
+#container {
+	display: flex;
+	display: -webkit-flex;
+}
+
+#container > div {
+	border: 2px solid #000000;
+	margin: 0 0.25em;
+}
+
+.institute {
+	text-align: center;
+	padding: 0.5em;
+}
+
+.institute .title {
+	color: red;
+	margin-bottom: 0.5em;
+}
+
+.institute .name {
+	font-weight: bold;
+	font-size: 1.25em;
+}
+
+.info {
+	padding: 0.5em;
+	border-top: 2px solid #000000;
+}
+
+.info > div {
+	margin: 0.25em 0;
+}
+
+.info div .label, .challan-info div .value {
+	display: inline-block;
+}
+
+.info .label {
+	width: 40%;
+}
+
+.info .value {
+	font-weight: bold;
+}
+
+table {
+	width: 100%;
+}
+
+th, td {
+	padding: 0;
+}
+
+th {
+	text-align: <%=start%>;
+}
+
+table .label {
+	width: 60%;
+	display: table-cell;
+}
+
+table .value {
+	width: 40%;
+	text-align: <%=end%>;
+	display: table-cell;
+}
+
+.detail {
+	display: flex;
+	display: -webkit-flex;
+}
+
+.detail span:last-child {
+	-webkit-flex: 1;
+	margin-<%=start%>: 0.5em;
+	border-bottom: 2px dotted #000000;
+}
+
+.cash {
+	border-collapse: collapse;
+}
+
+.cash td {
+	border: 2px solid #000000;
+	width: 50%;
+	padding: 0.25em;
+}
+
+.signature, .seal {
+	padding-top: 6em;
+}
+
+</style>
+</head>
+<body>
+	<div id='container'>
+		<%challan(__('Bank Copy'))%>
+		<%challan(__('School Copy'))%>
+		<%challan(__('Parent Copy'))%>
+	</div>
+	<script type="text/javascript">
+		document.body.style.zoom = 0.55;
+	</script>
+</body>
+</html>

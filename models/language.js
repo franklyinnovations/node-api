@@ -12,6 +12,10 @@ module.exports=  function(sequelize, DataTypes){
         notEmpty: {
           msg:'isRequired'
         },
+        len: {
+          args: [1, 100],
+          msg: 'Length can not be more than 100.',
+        },
         isExist: function(value , next){
           this.Model.find({where:{id:{$ne: this.id}, name:value}}).then(function(data){
             if (data !== null) {
@@ -28,6 +32,10 @@ module.exports=  function(sequelize, DataTypes){
       validate: {
         notEmpty: {
           msg:'isRequired'
+        },
+        len: {
+          args: [1, 20],
+          msg: 'Length can not be more than 20.',
         },
         isExist: function(value , next){
           this.Model.find({where:{id:{$ne: this.id}, code:value}}).then(function(data){

@@ -1,0 +1,9 @@
+<%
+var startDate = moment(start_date).format('YYYY-MM-DD');
+var endDate = moment(end_date).format('YYYY-MM-DD');
+var status = 'rejected';
+if(leavestatus == 1){
+	status = 'approved';
+}
+-%>
+<%=__("Dear Parent, Your applied leave for {{start_date}} to {{end_date}} for your child has been {{status}}", {start_date:startDate, end_date:endDate, status:status})%>.

@@ -76,6 +76,17 @@ module.exports=  function(sequelize, DataTypes){
           msg:'isRequired'
         }
       }
+    },
+    countryId: {
+      type: DataTypes.INTEGER,
+      validate: {
+        notEmpty: {
+          msg:'isRequired'
+        }
+      }
+    },
+    skypeId: {
+      type: DataTypes.STRING
     }
   },{
     tableName: 'contacts'

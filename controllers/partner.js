@@ -93,7 +93,7 @@ function Partner() {
         ['id', 'DESC']
       ],
       limit: setPage,
-      offset: pag, subQuery: false
+      offset: pag
     }).then(function(result){
       var totalData = result.count;
       var pageCount = Math.ceil(totalData / setPage);
@@ -106,7 +106,7 @@ function Partner() {
   */
  this.getById = function(req, res) {
     models.partner.find({where:{id:req.id}}).then(function(data){
-      res(data);
+      res({status: true, data});
     }).catch(() => res({status:false, error: true, error_description: language.lang({key: "Internal Error", lang: req.lang}), url: true}));
   };
 }

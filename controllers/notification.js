@@ -8,19 +8,21 @@ models = require('../models');
 const sender = new gcm.Sender(config.notificationApiKey);
 
 const defaultMessage = {
-	priority: 'high',
-	contentAvailable: true,
-	delayWhileIdle: true,
-	timeToLive: 3
+    priority: 'high',
+    contentAvailable: true,
+    delayWhileIdle: true,
+    timeToLive: 3
+	// restricted_package_name: 'com.pws.pateast',
+	// dry_run: true
 },
 defaultNotification = {
-	title: 'Wikicare',
-	icon: 'ic_launcher',
-	sound: 'default'
+	title: 'Pateast',
+	sound: 'default',
+	icon: 'ic_notification'
 };
 
 const render = (template, data) => new Promise((resolve, reject) => {
-	wikicare_app.render(
+	pateast_app.render(
 		template,
 		language.bindLocale(data, data.lang || 'en'),
 		(err, result) => {
@@ -40,63 +42,42 @@ exports.send = function (to, template, data, message = {}) {
 	};
 
 	return render(template, data)
-	.then(result => saveNotification({to, message:result, data:message}))
-	.then(notification => {
-		return new Promise((resolve, reject) => {
-			if(!notification || recipients.registrationTokens.length == 0)
-				return resolve(true);
-			message.data.notificationId = notification.id;
-			message.notification.body = notification.message;
-			Object.assign(message, defaultMessage);
-			var msg = new gcm.Message(message);
-			sender.send(msg, recipients, 3, (err, response) => {
-				if (err)
-					reject(err);
-				else
-					resolve(response);
+		.then(result => saveNotification({to, message:result, data:message}))
+		.then(notification => {
+			return new Promise((resolve, reject) => {
+				if(!notification || recipients.registrationTokens.length == 0)
+					return resolve(true);
+				message.data.notificationId = notification.id;
+				message.notification.body = notification.message;
+				Object.assign(message, defaultMessage);
+				var msg = new gcm.Message(message);
+				sender.send(msg, recipients, 3, (err, response) => {
+					if (err)
+						reject(err);
+					else
+						resolve(response);
+				});
 			});
-		})
-	});
-};
-
-exports.sendWithoutSaving = function (to, template, data, message = {}) {
-	message.notification = Object.assign(message.notification || {}, defaultNotification);
-	const recipients = {registrationTokens: to};
-
-	return render(template, data)
-	.then(result => {
-		return new Promise((resolve, reject) => {
-			message.notification.body = result;
-			Object.assign(message, defaultMessage);
-
-			sender.send(new gcm.Message(message), recipients, 3, (err, response) => {
-				if (err)
-					reject(err);
-				else
-					resolve(response);
-			});
-		});
-	});
+		}).catch(console.log);
 };
 
 const saveNotification = function(data){
-	let storeData = {},
-		meta = data.data.meta || {};
+	var storeData = {};
+	storeData.masterId = data.data.masterId;
 	storeData.senderId = data.data.senderId;
 	storeData.type = data.data.data.type;
 	storeData.message = data.message;
-	storeData.meta = JSON.stringify(meta);
-	let receivers =[];
+	var receivers =[];
 	data.to.forEach(function(item){
 		if(item.id){
-			let obj = {};
+			var obj = {};
 			obj.receiverId = item.id;
 			obj.status = 0;
 			receivers.push(obj);
 		}
 	});
 	storeData.receivers = receivers;
-	let receiversData = models.notification.hasMany(models.notificationreceiver, {as: 'receivers'});
+	var receiversData = models.notification.hasMany(models.notificationreceiver, {as: 'receivers'});
 	if(receivers.length > 0){
 		return models.notification.create(storeData,{include: [receiversData]});
 	} else {
@@ -104,117 +85,187 @@ const saveNotification = function(data){
 	}
 };
 
+exports.bcsmapIds = (boardId, classId) => {
+	return models.sequelize.query("SELECT `id` FROM `bcs_maps` WHERE `boardId` = ? \
+	 AND `classId` = ? ",
+	{replacements:[boardId,classId], type: models.sequelize.QueryTypes.SELECT} )
+	.then(ids => ids.map(x => x.id));
+};
+
+exports.getTeachersByBcsmapId = function(bcsmapIds, academicSessionId){
+	return models.sequelize.query(
+		"SELECT `users`.`id`, `users`.`device_id`, `users`.`is_notification` FROM `timetable_allocations` \
+		 INNER JOIN `timetables` ON `timetable_allocations`.`timetableId` = `timetables`.`id` \
+		 INNER JOIN `teachers` ON `timetable_allocations`.`teacherId` = `teachers`.`id`  \
+		 INNER JOIN `users` ON `teachers`.`userId` = `users`.`id` \
+		 WHERE `timetables`.`bcsMapId` IN (?) \
+		 AND `timetables`.`academicSessionId` = ? \
+		 AND `timetable_allocations`.`teacherId` != 0 \
+		 GROUP BY `users`.`id`",
+		{replacements:[bcsmapIds,academicSessionId], type: models.sequelize.QueryTypes.SELECT}
+	);
+};
+
+exports.getTeachersByTimetableId = function(id, academicSessionId){
+	return models.sequelize.query(
+		"SELECT `users`.`id`, `users`.`device_id`, `users`.`is_notification` FROM `timetable_allocations` \
+		 INNER JOIN `timetables` ON `timetable_allocations`.`timetableId` = `timetables`.`id` \
+		 INNER JOIN `teachers` ON `timetable_allocations`.`teacherId` = `teachers`.`id`  \
+		 INNER JOIN `users` ON `teachers`.`userId` = `users`.`id` \
+		 WHERE `timetables`.`id` = ? \
+		 AND `timetables`.`academicSessionId` = ? \
+		 AND `timetable_allocations`.`teacherId` != 0 \
+		 GROUP BY `users`.`id`",
+		{replacements:[id,academicSessionId], type: models.sequelize.QueryTypes.SELECT}
+	);
+};
+
+exports.getStudentsByBcsmapId = function(bcsmapIds, academicSessionId){
+	return models.sequelize.query(
+		"SELECT `users`.`id`, `users`.`device_id`, `users`.`is_notification` FROM `users` \
+		INNER JOIN `students` ON `users`.`id` = `students`.`userId` \
+		INNER JOIN `student_records` ON `students`.`id` = `student_records`.`studentId`\
+		WHERE `student_records`.`bcsMapId` IN (?) AND `student_records`.`academicSessionId` = ? \
+		GROUP BY `users`.`id`",
+		{replacements:[bcsmapIds,academicSessionId], type: models.sequelize.QueryTypes.SELECT}
+	);
+};
+
+exports.getParentByBcsmapId = function(bcsmapIds, academicSessionId){
+	return models.sequelize.query(
+		"SELECT `users`.`id`, `users`.`device_id`, `users`.`is_notification` FROM `users` \
+		WHERE FIND_IN_SET (`mobile`, (SELECT GROUP_CONCAT(`father_contact`,',',`father_contact_alternate`,',', \
+		`mother_contact`,',',`mother_contact_alternate`,',',`guardian_contact`,',',`guardian_contact_alternate`) AS mob\
+		FROM `students` \
+		INNER JOIN `student_records` ON `students`.`id` = `student_records`.`studentId`\
+		WHERE `student_records`.`bcsMapId` IN (?) AND `student_records`.`academicSessionId` = ?))\
+		AND `users`.`user_type` = 'parent' GROUP BY `users`.`id`",
+		{replacements:[bcsmapIds,academicSessionId], type: models.sequelize.QueryTypes.SELECT}
+	);
+};
+
+exports.getParentByStudentId = function(bcsmapIds, academicSessionId){
+	 return models.sequelize.query(
+	 	"SELECT `users`.`id`, `users`.`device_id`, `users`.`is_notification` FROM `users` \
+	 	WHERE FIND_IN_SET (`mobile`, (SELECT GROUP_CONCAT(`father_contact`,',',`father_contact_alternate`,',', \
+		`mother_contact`,',',`mother_contact_alternate`,',',`guardian_contact`,',',`guardian_contact_alternate`) AS mob\
+		FROM `students` \
+		INNER JOIN `student_records` ON `students`.`id` = `student_records`.`studentId`\
+		WHERE `student_records`.`bcsMapId` IN (?) AND `student_records`.`academicSessionId` = ?))\
+	 	AND `users`.`device_id` != '' AND `users`.`user_type` = 'parent' GROUP BY `users`.`id`",
+	 	{replacements:[bcsmapIds,academicSessionId], type: models.sequelize.QueryTypes.SELECT}
+	 );
+};
+
+exports.getAllTeachers = function getAllTeacher(masterId) {
+	return models.sequelize.query(
+		"SELECT `users`.`id`, `users`.`device_id`, `users`.`is_notification` FROM `users` \
+		WHERE `users`.`masterId` = ? AND `users`.`is_active` = 1 \
+		AND `users`.`user_type` = 'teacher' \
+		GROUP BY `users`.`id`",
+		{replacements: [masterId], type: models.sequelize.QueryTypes.SELECT}
+	);	
+};
+
 exports.list = function (req, res) {
 	var setPage = req.app.locals.site.page;
-	var currentPage = 1;
-	var pag = 1;
-	if (typeof req.query.page !== 'undefined') {
-		currentPage = +req.query.page;
-		pag = (currentPage - 1)* setPage;
-		delete req.query.page;
-	} else {
-		pag = 0;
-	}
-	var reqData = req.body;
+    var currentPage = 1;
+    var pag = 1;
+    if (typeof req.query.page !== 'undefined') {
+        currentPage = +req.query.page;
+        pag = (currentPage - 1)* setPage;
+        delete req.query.page;
+    } else {
+        pag = 0;
+    }
+    var reqData = req.body;
 	if(typeof req.body.data !== 'undefined'){
 		reqData = JSON.parse(req.body.data);
 	}
 	models.notificationreceiver.belongsTo(models.notification);
 	models.notification.belongsTo(models.user, {foreignKey:'senderId'});
 	models.user.hasMany(models.userdetail);
-	Promise.all([
-		models.notificationreceiver.findAndCountAll({
-			include: [
-				{
-					model: models.notification,
-					attributes:['type', 'message', 'meta', 'createdAt'],
-					include:[{
+	models.user.belongsTo(models.institute, {foreignKey: 'masterId', targetKey: 'userId'});
+	models.institute.hasMany(models.institutedetail);
+
+	models.notificationreceiver.findAndCountAll({
+		include: [
+			{
+				model: models.notification,
+				attributes:['type', 'message'],
+				include:[
+					{
 						model:models.user,
-						attributes:['id'],
-						include:[{
-							model:models.userdetail,
-							attributes:['fullname']
-						}]
-					}]
-				}
-			],
-			where: {
-				receiverId:reqData.userId,
-				status: {$in:[0, 1]}
-			},
-			order: [
-				['id', 'DESC']
-			],
-			distinct: true,
-			limit: setPage,
-			offset: pag, subQuery: false
-		}),
-		models.notificationreceiver.count({
-			where: {
-				receiverId:reqData.userId,
-				status: 0
+						attributes:['id', 'user_type'],
+						include:[
+							{
+								model:models.userdetail,
+								attributes:['fullname']
+							},
+							{
+								model: models.institute,
+								attributes: ['id'],
+								include: [
+									{
+										model: models.institutedetail,
+										where: language.buildLanguageQuery(
+											{},
+											req.langId,
+											'`notification.user.institute`.`id`',
+											models.institutedetail,
+											'instituteId'
+										),
+										attributes: ['name', 'alias'],
+									}
+								],
+							},
+						]
+					},
+				]
 			}
-		})
-	]).then(([result, unread_count]) => ({
-		totalData: result.count,
-		pageCount: Math.ceil(result.count / setPage),
-		pageLimit: setPage, 
-		currentPage:currentPage, 
-		status: true,
-		message: language.lang({key: 'Notification List', lang: reqData.lang}),
-		data: result.rows,
-		unread_count
-	}))
-	.then(res);
+		],
+		where: {
+			receiverId:reqData.userId
+		},
+		order: [
+			['id', 'DESC']
+		],
+		distinct: true,
+		limit: setPage,
+		offset: pag, subQuery: false
+	})
+		.then(result => ({
+			totalData: result.count,
+			pageCount: Math.ceil(result.count / setPage),
+			pageLimit: setPage, 
+			currentPage:currentPage, 
+			status: true,
+			message: language.lang({key: 'Notification List', lang: reqData.lang}),
+			data: result.rows
+		}))
+		.then(res);
 };
 
 /*
    *Notification status update
 */
 exports.notificationStatus = function(req, res) {
-
-	if(req.notificationId){
-		req.notificationId = req.notificationId.split(',');
-	}
 	models.notificationreceiver.update(
 		{
-			status:req.notification_status
+			status:req.is_notification
 		},
 		{
 			where:{
-				notificationId:{$in:req.notificationId},
+				notificationId:req.notificationId,
 				receiverId:req.receiverId
 			}
 		}
 	)
 	.then(function(data){
-		models.notificationreceiver.count({
-			where: {
-				receiverId:req.receiverId,
-				status: 0
-			}
-		}).then(unread_count => {
-			res({
-				status:true,
-				message:language.lang({key:"updatedSuccessfully", lang:req.lang}),
-				data:{notification:req.is_notification},
-				unread_count
-			});
-		});
-	}).catch(() => {
-		res({status: false, message:language.lang({key:"Internal Error", lang:req.lang})})
-	});
-};
-
-exports.unreadCount = function(req, res) {
-	models.notificationreceiver.count({
-		where: {
-			receiverId:req.receiverId,
-			status: 0
-		}
-	}).then(count => {
-		res({status: true, data:{count}});
-	}).catch(() => {
-		res({status: false, message:language.lang({key:"Error", lang:req.lang})});
+	  res({
+	  	status:true,
+	  	message:language.lang({key:"updatedSuccessfully", lang:req.lang}),
+	  	data:{notification:req.is_notification}
+	  });
 	});
 };

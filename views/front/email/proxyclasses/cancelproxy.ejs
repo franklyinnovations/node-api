@@ -1,0 +1,6 @@
+<%-include('../header.ejs')%>
+<p><%= __('Dear')%> <%=data.fullname%></p>
+<p><%=__('Your Proxy in the class {{bcsmap}} for Period {{period}} for today dated {{date}}, has been cancelled.', {bcsmap: data.bcsmap, period: data.period, date: data.date})%></p>
+<p><%=__('For any concern, Please talk to Admin')%></p>
+<p><%=__('Thanks')%></p>
+<%-include('../footer.ejs')%>

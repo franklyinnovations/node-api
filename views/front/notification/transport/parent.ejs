@@ -1,0 +1,5 @@
+<% if(helper) { -%>
+<%-__("Dear Parent, {{driver}} and {{helper}} will be driver and helper for your child's transport vehicle ({{vehicle_no}}) and will be picking up your child at Route {{route}}", {driver:driver, helper:helper, vehicle_no:vehicle_no, route:route}) -%>.
+<% } else { -%>
+<%-__("Dear Parent, {{driver}} will be driver for your child's transport vehicle ({{vehicle_no}}) and will be picking up your child at Route {{route}}", {driver:driver, helper:helper, vehicle_no:vehicle_no, route:route}) -%>.
+<% } -%>

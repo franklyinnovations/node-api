@@ -1,8 +1,8 @@
 <%-include('../header.ejs')%>
 <h3><%=__('Welcome')%>  <%= data.fullname %></h3>
-<h4><%=__('Your Pateast account has been created successfully and is ready to use')%></h4>
-<p><%=__('Email')%> - <%= data.email %></p>
+<h4><%=__('Your Institute {{institute_name}} has created your account successfully on Pateast (School ERP) and is ready to use.',{institute_name:data.institute_name})%></h4>
+<p><%=__('You can download app from ')%><a href="http://bit.ly/2DxZCVc"><%=__('Play Store')%></a> <%=__('and login with these credentials')%>-</p>
 <p><%=__('User Name')%> - <%= data.username %></p>
 <p><%=__('Password')%> - <%= data.password %></p>
-<a href="<%= data.link %>"><%=__('Please login and reset your password')%></a>
+<p><%=__('If any assistance required, please contact us to support@pateast.co')%></p>
 <%-include('../footer.ejs')%>

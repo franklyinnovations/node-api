@@ -12,9 +12,8 @@ function Role() {
     if (typeof req.is_active === 'undefined') {
       req.is_active = 0;
     }
+    models.roledetail.belongsTo(models.role);
     var RoleHasOne = models.role.hasOne(models.roledetail, {as: 'role_detail'});
-    //var rolepermissionHasOne = models.role.hasMany(models.rolepermission, {as: 'rolepermissions'});
-
 
     req.role_detail.languageId = req.langId;
     req.role_detail.masterId = req.masterId;
@@ -165,12 +164,15 @@ function Role() {
     models.role.find({
       include: [{
         model: models.roledetail, 
-        where: language.buildLanguageQuery({}, req.langId, '`role`.`id`', models.roledetail, 'roleId')},
-        {model: models.rolepermission}], 
-        where:{
-          id:req.id,
-          masterId: req.masterId
-        }}).then(function(data){
+        where: language.buildLanguageQuery({}, req.langId, '`role`.`id`', models.roledetail, 'roleId')
+      },{
+        model: models.rolepermission
+      }], 
+      where:{
+        id:req.id,
+        masterId: req.masterId
+      }
+    }).then(function(data){
       res(data);
     }).catch(() => res({status:false, error: true, error_description: language.lang({key: "Internal Error", lang: req.lang}), url: true}));
   };
@@ -181,12 +183,17 @@ Update for React-Redux admin
  this.getEditData = function(req, res) {
     models.role.hasMany(models.roledetail);
     models.role.hasMany(models.rolepermission);
+    models.rolepermission.belongsTo(models.permission);
     models.role.find({
       include: [{
         model: models.roledetail, 
         where: language.buildLanguageQuery({}, req.langId, '`role`.`id`', models.roledetail, 'roleId')
       },{
-        model: models.rolepermission
+        model: models.rolepermission,
+        include: [{
+          model: models.permission,
+          attributes: ['model']
+        }]
       }], 
       where:{
         id:req.id,
@@ -199,17 +206,23 @@ Update for React-Redux admin
     }).catch(() => res({status:false, error: true, error_description: language.lang({key: "Internal Error", lang: req.lang}), url: true}));
   };
 
-  /*
-   * get All Country
-  */
  this.getAllRole = function(req, res) {
-    //models.role.hasMany(models.roledetail);
-    models.role.findAll({
-        include: [
+    models.role.hasMany(models.roledetail);
+    models.role.findAll({include: [
       {model: models.roledetail, where: language.buildLanguageQuery({}, req.langId, '`role`.`id`', models.roledetail, 'roleId')}
-  ],
-      where:{masterId:req.masterId, is_active:1, id:{$ne:0}, slug:{$notIn: ['teacher', 'student']}}
-      
+    ],
+      where:{masterId:req.masterId, is_active:1, id:{$ne:0}, slug:{$notIn: ['parent', 'teacher', 'student', 'driver', 'helper']}}
+    }).then(function(data){
+      res(data);
+    }).catch(() => res({status:false, error: true, error_description: language.lang({key: "Internal Error", lang: req.lang}), url: true}));
+  };
+
+  this.getEmpAttendanceRole = function(req, res) {
+    models.role.hasMany(models.roledetail);
+    models.role.findAll({include: [
+      {model: models.roledetail, where: language.buildLanguageQuery({}, req.langId, '`role`.`id`', models.roledetail, 'roleId')}
+    ],
+      where:{masterId:req.masterId, is_active:1, id:{$ne:0}, slug:{$notIn: ['parent', 'student']}}
     }).then(function(data){
       res(data);
     }).catch(() => res({status:false, error: true, error_description: language.lang({key: "Internal Error", lang: req.lang}), url: true}));
@@ -237,39 +250,43 @@ Update for React-Redux admin
   };
 
   this.createPermission = function(req, res){
-    var roleId = req.id;
-    models.rolepermission.destroy({where:{roleId:roleId}}).then(function(){
-      var count =1;
-      var permissionData = [];
-      var permissionIds = [];
-      if (typeof req.permissionIds !=='undefined') {
-        permissionIds = req.permissionIds;
-      }
-      permissionIds.push('1');
-      async.forEach(permissionIds, function (item, callback) {
-        var saveData = {};
-        models.permission.find({
-          where: {
-            id: item
-          }
-        }).then(function (result) {
-          saveData.roleId = roleId;
-          saveData.permissionId = result.id;
-          saveData.module_name = result.model;
-          permissionData.push(saveData);
-          if (permissionIds.length ==count) {
-            callback(permissionData);
-          }
-        count++;
-        }).catch(() => res({status:false, error: true, error_description: language.lang({key: "Internal Error", lang: req.lang}), url: true}));
-      }, function () {
-        models.rolepermission.bulkCreate(permissionData).then(function(data){
-          res(data);
-        }).catch(() => res({status:false, error: true, error_description: language.lang({key: "Internal Error", lang: req.lang}), url: true}));
-      });
-    }).catch(() => res({status:false, error: true, error_description: language.lang({key: "Internal Error", lang: req.lang}), url: true}));
-  };
+    let roleId = req.id, permissionIds = [];
+    if (typeof req.permissionIds !=='undefined') {
+      permissionIds = req.permissionIds;
+    }
+    if(permissionIds.indexOf(1) === -1) permissionIds.push('1');
 
+    let permissionData = [];
+    for (var i = 0; i < permissionIds.length; i++) {
+      permissionData.push({
+        roleId,
+        permissionId: permissionIds[i]
+      });
+    }
+
+    models.rolepermission.destroy({
+      where:{
+        roleId:roleId,
+        permissionId: {$notIn: permissionIds},
+      }
+    }).then(function(){
+      models.rolepermission.bulkCreate(permissionData, {
+        ignoreDuplicates:true,
+      }).then(function(data){
+        res({data});
+      }).catch(() => res({
+        status:false,
+        error: true,
+        error_description: language.lang({key: "Internal Error", lang: req.lang}),
+        url: true
+      }));
+    }).catch(() => res({
+      status:false,
+      error: true,
+      error_description: language.lang({key: "Internal Error", lang: req.lang}),
+      url: true
+    }));
+  };
 
   this.getMetaInformations = function(req, res){
     permission.getAllPermission(req, function(permissions){
@@ -277,18 +294,27 @@ Update for React-Redux admin
     });
   };
 
-  this.getSignupRoles = function(req, res) {
-    models.role.hasMany(models.roledetail);
-    models.role.findAll({
-      include: [
-        {model: models.roledetail, where: language.buildLanguageQuery({}, req.langId, '`role`.`id`', models.roledetail, 'roleId')}
-      ],
-      where:{is_active:1, id:{$ne:0}, slug:{$notIn: ['patient']}}
-    }).then(function(data){
-      res(data);
-    })
-    //.catch(() => res({status:false, error: true, error_description: language.lang({key: "Internal Error", lang: req.lang}), url: true}));
-  }
+  this.remove = async req => {
+    try {
+      let deleted = await models.role.destroy({
+        where: {
+          id: req.id,
+          slug: 'role',
+        },
+      });
+      if (deleted === 0) throw 'SLUG_ERROR';
+    } catch (err) {
+      return {
+        status: false,
+        message: language.lang({key: 'Can not delete role, It is being used.'}),
+      }
+    }
+
+    return {
+      status: true,
+      message: language.lang({key: 'deletedSuccessfully', lang: req.lang}),
+    };
+  };
 
 }
 

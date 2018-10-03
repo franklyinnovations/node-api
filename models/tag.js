@@ -10,14 +10,6 @@ module.exports = function (sequalize, DataTypes) {
 		, masterId: {
 			type: DataTypes.INTEGER
 		}
-		, tagtypeId: {
-			type: DataTypes.INTEGER,
-			validate: {
-				notEmpty: {
-					msg: 'isRequired'
-				},
-			}
-		}
 		, userId: {
 			type: DataTypes.INTEGER
 		}
@@ -28,9 +20,15 @@ module.exports = function (sequalize, DataTypes) {
 					args: [[0, 1]]
 					, msg: 'Invalid Status'
 				}
-			}
-		}, is_approved: {
+			} 
+		}
+		, type: {
 			type: DataTypes.INTEGER(6)
+			, validate: {
+				notEmpty: {
+					msg:'isRequired'	
+				}
+			}
 		}
 	}, {
 		tableName: 'tags'

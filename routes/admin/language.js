@@ -14,7 +14,7 @@ router.post('/', oauth.oauth.authorise(), upload.array(), function (req, res) {
 
 /* save language */
 router.post('/save', oauth.oauth.authorise(), upload.array(), function (req, res) {
-    var data = JSON.parse(req.body.data);
+    var data = req.body.data ? JSON.parse(req.body.data) : req.body;
     language.save(data, function(result){
         res.send(result);
     });
@@ -22,7 +22,7 @@ router.post('/save', oauth.oauth.authorise(), upload.array(), function (req, res
 
 /* edit language */
 router.post('/edit/:id', oauth.oauth.authorise(), upload.array(), function (req, res) {
-    var data = JSON.parse(req.body.data);
+    var data = req.body.data ? JSON.parse(req.body.data) : req.body;
     data.id = req.params.id;
     language.getById(data, function(result){
         res.send(result);
@@ -31,7 +31,7 @@ router.post('/edit/:id', oauth.oauth.authorise(), upload.array(), function (req,
 
 /* status language */
 router.post('/status/:id/:status', oauth.oauth.authorise(), upload.array(), function (req, res) {
-    var data = JSON.parse(req.body.data);
+    var data = req.body.data ? JSON.parse(req.body.data) : req.body;
     data.id = req.params.id;
     data.is_active = req.params.status;
     language.status(data, function(result){
@@ -41,8 +41,16 @@ router.post('/status/:id/:status', oauth.oauth.authorise(), upload.array(), func
 
 /* language list  */
 router.post('/list', upload.array(), function (req, res) {
-    var data = JSON.parse(req.body.data);
+    var data = req.body.data ? JSON.parse(req.body.data) : req.body;
     language.getAllLanguage(data, function(result){
+        res.send(result);
+    });
+});
+
+/* language list  */
+router.post('/signuplist', upload.array(), function (req, res) {
+    var data = req.body.data ? JSON.parse(req.body.data) : req.body;
+    language.getAllLanguageAlphabetically(data, function(result){
         res.send(result);
     });
 });

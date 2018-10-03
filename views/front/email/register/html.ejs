@@ -1,6 +1,8 @@
 <%-include('../header.ejs')%>
 <h3><%=__('Welcome')%>  <%= data.fullname %></h3>
-<h4><%=__('Your Wikicare account has been created successfully and is ready to use')%></h4>
+<h4><%=__('Your Institute {{institute_name}} has created your account successfully on Pateast platform and is ready to use.',{institute_name:data.institute_name})%></h4>
 <p><%=__('Email')%> - <%= data.email %></p>
+<p><%=__('User Name')%> - <%= data.username %></p>
 <p><%=__('Password')%> - <%= data.password %></p>
+<a href="<%= data.link %>"><%=__('Please login and reset your username and password')%></a>
 <%-include('../footer.ejs')%>

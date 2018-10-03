@@ -19,20 +19,27 @@ module.exports=  function(sequelize, DataTypes){
         notEmpty: {
           msg: 'isRequired'
         },
-        isExist: function(value , next){
-          if(this.languageId == 1){
-            var langCondition = this.languageId;
-          }else{
-            var langCondition = {$in:[this.languageId, 1]};
-          }
-          this.Model.find({where:{id:{$ne: this.id}, name:value, languageId:langCondition, masterId:this.masterId}}).then(function(data){
-            if (data !== null) {
-                next('isUnique');
-            } else {
-                next();
-            }
+        len: {
+          args: [1, 150],
+          msg: 'Length can not be more than 150.',
+        },
+        unique: async function (name, next) {
+          let where = {name, languageId: [this.languageId, 1]};
+          if (this.roleId) where.roleId = {$ne: this.roleId};
+          let duplicate = await this.Model.find({
+            include: [{
+              model: this.Model.sequelize.models.role,
+              where: {
+                masterId: this.masterId,
+              },
+            }],
+            where,
+            order: [
+              ['languageId', 'DESC'],
+            ],
           });
-        }
+          next(duplicate === null ? null : 'isUnique');
+        },
       }
     },
     masterId: {

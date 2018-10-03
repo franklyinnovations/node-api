@@ -7,7 +7,6 @@ var oauthCont = require('../controllers/oauth');
 const oauthGrant = oauth.oauth.grant();
 
 router.all('/token', function(req, res, next){
-    console.log(req);
 	var end = res.end;
 	res.end = function (...args) {
 		var data = args[0];
@@ -20,7 +19,7 @@ router.all('/token', function(req, res, next){
 		}
 		if(data.code == 400) return end.call(res, ...args);
 		data.deviceType = req.device.type.toUpperCase();
-		oauthCont.updateDeviceType(data, function(){
+		oauthCont.updateDeviceType({...data, device_id: req.body.device_id}, function(){
 			end.call(res, ...args);
 		});
 	};

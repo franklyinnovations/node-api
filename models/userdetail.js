@@ -18,9 +18,21 @@ module.exports=  function(sequelize, DataTypes){
       validate: {
         notEmpty: {
           msg: 'isRequired'
+        },
+        len: {
+          args: [1, 150],
+          msg: 'Length can not be more than 150.',
         }
       }
     },
+    address: {
+      type: DataTypes.STRING,
+      validate: {
+        notEmpty: {
+          msg: 'isRequired'
+        }
+      }
+    }
   },{
     tableName: 'user_details',
     timestamps: false,

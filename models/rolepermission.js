@@ -2,19 +2,13 @@
 
 module.exports=  function(sequelize, DataTypes){
   var Model = sequelize.define("rolepermission", {
-    id: {
+    permissionId: {
       type: DataTypes.INTEGER,
-      autoIncrement: true,
       primaryKey: true,
     },
-    permissionId: {
-      type: DataTypes.INTEGER
-    },
     roleId: {
-      type: DataTypes.INTEGER
-    },
-    module_name: {
-      type: DataTypes.STRING
+      type: DataTypes.INTEGER,
+      primaryKey: true,
     }
   },{
     tableName: 'role_permissions',

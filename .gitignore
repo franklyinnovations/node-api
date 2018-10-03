@@ -1,0 +1,6 @@
+/bin
+/config/config.json
+/npm-debug.log
+/app.js
+/node_modules
+/public/uploads

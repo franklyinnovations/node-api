@@ -26,7 +26,7 @@ router.post('/save', oauth.oauth.authorise(), upload.array(), function (req, res
 	if(typeof req.body.data !== 'undefined'){
 		data = JSON.parse(req.body.data);
 	}
-    req.roleAccess = {model:'country', action:'add'};
+    req.roleAccess = {model:'country', action:['add', 'edit']};
     auth.checkPermissions(req, function(isPermission){
         if (isPermission.status === true) {
             country.save(data, function(result){

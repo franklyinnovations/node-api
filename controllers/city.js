@@ -137,7 +137,7 @@ function City() {
     models.country.hasMany(models.countrydetail);
     models.city.belongsTo(models.state);
     models.state.hasMany(models.statedetail);
-
+    
     isWhere.citydetail = language.buildLanguageQuery(
       isWhere.citydetail, reqData.langId, '`city`.`id`', models.citydetail, 'cityId'
     );
@@ -160,137 +160,12 @@ function City() {
       ],
       distinct: true,
       limit: setPage,
-      offset: pag, subQuery: false
+      offset: pag
     }).then(function(result){
       var totalData = result.count;
       var pageCount = Math.ceil(totalData / setPage);
       res({data:result.rows, totalData: totalData, pageCount: pageCount,  pageLimit: setPage, currentPage:currentPage });
     }).catch(() => res({status:false, error: true, error_description: language.lang({key: "Internal Error", lang: reqData.lang}), url: true}));
-  };
-
-
-
-
-
-
-
-/*
-   * list of all
-  */
-  this.cityList = function(req, res) {
-    //var data = JSON.parse(req.body.data);
-    var setPage = req.app.locals.site.page;
-    //var setPage = 5;
-   // console.log(setPage)
-    var currentPage = 1;
-    var pag = 1;
-    if (typeof req.body.page !== 'undefined') {
-        currentPage = +req.body.page;
-        pag = (currentPage - 1)* setPage;
-        delete req.body.page;
-    } else {
-        pag = 0;
-    }
-     /*
-    * for  filltering
-    */
-    var reqData = req.body;
-    if(typeof req.body.data !== 'undefined'){
-      reqData = JSON.parse(req.body.data);
-    }
-    var isWhere = {};
-    var orderBy = '';
-    if (req.query) {
-      var responseData = {};
-      async.forEach(Object.keys(req.query), function (item, callback) {
-        if (req.query[item] !== ''){
-          var modelKey = item.split('__');
-          if(typeof responseData[modelKey[0]] =='undefined'){
-            var col = {};
-            col[modelKey[1]] = {$like: '%' + req.query[item] + '%'};
-            responseData[modelKey[0]] = col;
-          } else {
-            responseData[modelKey[0]][modelKey[1]] = {$like: '%' + req.query[item] + '%'};
-          }
-        }
-        callback();
-      }, function () {
-        isWhere = responseData;
-      });
-    }
-    //isWhere['delete'] = 1;
-    orderBy = 'id DESC';
-
-    models.city.hasMany(models.citydetail);
-    models.city.belongsTo(models.state);
-    models.state.hasMany(models.statedetail);
-
-    isWhere.citydetail = language.buildLanguageQuery(
-      isWhere.citydetail, reqData.langId, '`city`.`id`', models.citydetail, 'cityId'
-    );
-    isWhere.statedetail = language.buildLanguageQuery(
-      isWhere.statedetail, reqData.langId, '`state`.`id`', models.statedetail, 'stateId'
-    );
-
-    models.city.findAndCountAll({
-     attributes: [
-       'id',
-       ///[models.sequelize.fn('CONCAT', models.sequelize.literal('citydetails.name'),models.sequelize.literal('state.statedetails[name]')), 'idsss']
-      
-      ],
-      include: [
-        {model: models.citydetail,attributes:['name'], where:[isWhere.citydetail,{name:{$like:'%'+req.body.title+'%'}}]},
-        {model:models.state,attributes:['id'], include: [{model: models.statedetail,attributes:['name'], where:isWhere.statedetail}]}
-      ],
-      where: [isWhere.city,{is_active:1}],
-      order: [[models.citydetail, 'name', 'ASC']],
-      distinct: true,
-      limit: setPage,
-      offset: pag,
-       subQuery: false
-    }).then(function(result){
-      var totalData = result.count;
-      var pageCount = Math.ceil(totalData / setPage);
-      res({status:true,data:result.rows, totalData: totalData, pageCount: pageCount,  pageLimit: setPage, currentPage:currentPage });
-    })//.catch(() => res({status:false, error: true, error_description: language.lang({key: "Internal Error", lang: reqData.lang}), url: true}));
-  };
-
-/*
-   * list of all
-  */
-  this.cityData = function(req, res) {
-    orderBy = 'id DESC';
-
-    models.city.hasMany(models.citydetail);
-    models.city.belongsTo(models.state);
-    models.state.hasMany(models.statedetail);
-    isWhere={};
-    isWhere.citydetail = language.buildLanguageQuery(
-      isWhere.citydetail, req.langId, '`city`.`id`', models.citydetail, 'cityId'
-    );
-    isWhere.statedetail = language.buildLanguageQuery(
-      isWhere.statedetail, req.langId, '`state`.`id`', models.statedetail, 'stateId'
-    );
-
-    models.city.findAndCountAll({
-     attributes: [
-       'id',
-       ///[models.sequelize.fn('CONCAT', models.sequelize.literal('citydetails.name'),models.sequelize.literal('state.statedetails[name]')), 'idsss']
-      
-      ],
-      include: [
-        {model: models.citydetail,attributes:['name'], where:[isWhere.citydetail]},
-        {model:models.state,attributes:['id'], include: [{model: models.statedetail,attributes:['name'], where:isWhere.statedetail}]}
-      ],
-      where: {id:req},
-      order: [
-        ['id', 'DESC']
-      ],
-      distinct: true,
-       subQuery: false
-    }).then(function(result){
-      res({status:true,data:result.rows});
-    })//.catch(() => res({status:false, error: true, error_description: language.lang({key: "Internal Error", lang: req.lang}), url: true}));
   };
 
   /*
@@ -302,7 +177,7 @@ function City() {
     isWhere.citydetail = language.buildLanguageQuery(
       isWhere.citydetail, req.langId, '`city`.`id`', models.citydetail, 'cityId'
     );
-
+    
     models.city.find({
       include: [{model: models.citydetail, where:isWhere.citydetail}],
       where:{
@@ -321,7 +196,7 @@ function City() {
     isWhere.citydetail = language.buildLanguageQuery(
       isWhere.citydetail, req.langId, '`city`.`id`', models.citydetail, 'cityId'
     );
-
+    
     models.city.find({
       include: [{model: models.citydetail, where:isWhere.citydetail}],
       where:{
@@ -347,7 +222,7 @@ function City() {
   };
 
   /*
-   * get All City of state
+   * get All City
   */
  this.getAllCity = function(req, res) {
     models.city.hasMany(models.citydetail);
@@ -360,28 +235,6 @@ function City() {
         {model: models.citydetail, where:isWhere.citydetail}
       ],
       where:{is_active:1, stateId:req.stateId},
-      order: [
-        [models.citydetail, 'name', 'ASC']
-      ]
-    }).then(function(data){
-      res({data:data});
-    }).catch(() => res({status:false, error: true, error_description: language.lang({key: "Internal Error", lang: req.lang}), url: true}));
-  };
-
-  /*
-   * get All City at once
-  */
-  this.getAllCityAtOnce = function(req, res) {
-    models.city.hasMany(models.citydetail);
-    var isWhere = {};
-    isWhere.citydetail = language.buildLanguageQuery(
-      isWhere.citydetail, req.langId, '`city`.`id`', models.citydetail, 'cityId'
-    );
-    models.city.findAll({
-      include: [
-        {model: models.citydetail, where:isWhere.citydetail}
-      ],
-      where:{is_active:1},
       order: [
         [models.citydetail, 'name', 'ASC']
       ]

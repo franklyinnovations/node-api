@@ -1,0 +1,266 @@
+<%
+let leavestatusoptions = [
+	'Pending',
+	'Approved',
+	'Cancelled',
+	'Rejected',
+]
+-%>
+<%-include('header')%>
+<tr>
+	<td style="font-size:14px;color:#ffffff; line-height:24px; font-family:arial, sans-serif; padding-bottom: 15px;">
+		<table class="width-full" cellpadding="0" cellspacing="0" width="100%" border="0" style=" border-collapse: collapse;" align="center">
+			<tr>
+				<% if (assignments) {-%>
+					<td style="background: #1b71c2; padding: 30px 10px; text-align: center; width: 150px;">
+						<a href="https://www.pateast.co/assignment/setup" style="text-decoration: none; font-size: 30px; font-weight: bold; color: #fff;display: block; padding-bottom: 10px;">
+							<%=assignments.count%>
+						</a>
+						<%=__('Assignments')%>
+					</td>
+				<% } -%>
+				<% if (empleaves) { -%>
+					<td style="background: #eb9d19; padding: 30px 10px; text-align: center;  width: 150px;">
+						<a href="https://www.pateast.co/hrm/empleave" style="text-decoration: none; font-size: 30px; font-weight: bold; color: #fff; display: block; padding-bottom: 10px;">
+							<%=empleaves.count%>
+						</a>
+						<%=__('Employee Leaves')%>
+					</td>	
+				<% } -%>
+				<% if (feesubmissions) { -%>
+					<td style="background: #9340ab; padding: 30px 10px; text-align: center;  width: 150px;">
+						<a href="https://www.pateast.co/finances/fee-submission" style="text-decoration: none; font-size: 30px; font-weight: bold; color: #fff; display: block; padding-bottom: 10px;">
+							<%=feesubmissions.count%>
+						</a>
+						<%=__('Fee Susbmissions')%>
+					</td>
+				<% } -%>
+				<% if (studentleaves) { -%>
+					<td style="background: #ea414d; padding: 30px 10px; text-align: center;  width: 150px;">
+						<a href="https://www.pateast.co/student-attendance/student-leave" style="text-decoration: none; font-size: 30px; font-weight: bold; color: #fff; display: block; padding-bottom: 10px;">
+							<%=studentleaves.count%>
+						</a>
+						<%=__('Student Leaves')%>
+					</td>
+				<% } -%>
+			</tr>
+		</table>
+	</td>
+</tr>
+<% if (assignments) { -%>
+	<tr>
+		<td style="text-decoration: none; font-size: 18px; color: #00a087; font-family:arial, sans-serif; padding: 35px 7px 10px; "> 
+			<%=__('Assignments')%>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<% for (var i = 0; i < assignments.rows.length; i++) { -%>
+				<table class="width-full" cellpadding="0" cellspacing="0" width="100%" border="0" style="padding:10px 7px 10px; border-bottom: 1px solid #dedede;" align="center">
+					<tr>
+						<td style="width: 100px; font-size: 14px; line-height: 24px; color: #ea414d; font-family:arial, sans-serif;">
+								<%=assignments.rows[i].assignmentdetails[0].title%>
+						</td>
+						<td style="text-align: center; width: 100px; font-size: 14px; line-height: 24px; color: #ea414d; font-family:arial, sans-serif;">
+							<%=__(assignments.rows[i].assignment_status)%>
+						</td>
+					</tr>
+					<tr>
+						<td style="text-decoration: none; font-size: 14px; line-height: 24px; color: #606060; font-family:arial, sans-serif;" colspan="2">
+							<%=__('Due on')%> <%=moment(assignments.rows[i].end_date).format(institute.date_format)%>
+						</td>
+					</tr>
+		 		</table>
+			<% } -%>
+			<% if (assignments.count !== 0) { -%>
+				<table class="width-full" cellpadding="0" cellspacing="0" width="100%" border="0" style="padding:10px 7px; border-bottom: 1px solid #dedede; background:#ea414d;" align="center">
+						<tr>
+							<td style="text-align: center; ">
+								 <a href="https://www.pateast.co/assignment/setup" style="text-decoration: none; font-size: 16px; line-height: 24px; color: #fff; font-family:arial, sans-serif; ">
+								 	<%=__('Click here to view all Assigments')%>
+								 </a>
+							</td>
+						</tr>
+				</table>
+			<% } -%>
+		</td>
+	</tr>
+<% } -%>
+<% if (assignments && assignments.count === 0) { -%>
+	<tr>
+		<td>
+			<table class="width-full" cellpadding="0" cellspacing="0" width="100%" border="0" style="padding:15px 7px 30px; border-bottom: 1px solid #dedede;" align="center">
+				<tr>
+					<td style="text-align: center; font-size: 16px; line-height: 24px; font-family:arial, sans-serif; color: #606060;">
+						<%=__('No assignments for you.')%>
+					</td>
+				</tr>
+		 </table> 
+		</td>
+	</tr>
+<% } -%>
+<% if (empleaves) { -%>
+	<tr>
+		<td style="text-decoration: none; font-size: 18px; color: #00a087; font-family:arial, sans-serif; padding: 35px 7px 10px; "> 
+			<%=__('Employee Leaves')%>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<% for (var i = 0; i < empleaves.rows.length; i++) { -%>
+				<table class="width-full" cellpadding="0" cellspacing="0" width="100%" border="0" style="padding:10px 7px 10px; border-bottom: 1px solid #dedede;" align="center">
+					<tr>
+						<td style="width: 100px; font-size: 14px; line-height: 24px; color: #ea414d; font-family:arial, sans-serif;">
+								<%=empleaves.rows[i].user.userdetails[0].fullname%>
+						</td>
+						<td style="text-align: center; width: 100px; font-size: 14px; line-height: 24px; color: #ea414d; font-family:arial, sans-serif;">
+							<%=__(leavestatusoptions[empleaves.rows[i].leavestatus])%>
+						</td>
+					</tr>
+					<tr>
+						<td style="text-decoration: none; font-size: 14px; line-height: 24px; color: #606060; font-family:arial, sans-serif;" colspan="2">
+							<%=moment(empleaves.rows[i].start_date).format(institute.date_format)%>
+							<%=__('To')%>
+							<%=moment(empleaves.rows[i].end_date).format(institute.date_format)%>
+						</td>
+					</tr>
+				</table>
+			<% } -%>
+			<% if (empleaves.count !== 0) { -%>
+				<table class="width-full" cellpadding="0" cellspacing="0" width="100%" border="0" style="padding:10px 7px; border-bottom: 1px solid #dedede; background:#ea414d;" align="center">
+						<tr>
+							<td style="text-align: center; ">
+								 <a href="https://www.pateast.co/hrm/empleave" style="text-decoration: none; font-size: 16px; line-height: 24px; color: #fff; font-family:arial, sans-serif; ">
+								 	<%=__('Click here to view all Employee Leaves')%>
+								 </a>
+							</td>
+						</tr>
+				</table>
+		 	<% } -%>
+		</td>
+	</tr>
+<% } -%>
+<% if (empleaves && empleaves.count === 0) { -%>
+	<tr>
+		<td>
+			<table class="width-full" cellpadding="0" cellspacing="0" width="100%" border="0" style="padding:15px 7px 30px; border-bottom: 1px solid #dedede;" align="center">
+				<tr>
+					<td style="text-align: center; font-size: 16px; line-height: 24px; font-family:arial, sans-serif; color: #606060;">
+						<%=__('No Employee Leaves for you.')%>
+					</td>
+				</tr> 
+		 </table> 
+		</td>
+	</tr>
+<% } -%>
+<% if (feesubmissions) { -%>
+	<tr>
+		<td style="text-decoration: none; font-size: 18px; color: #00a087; font-family:arial, sans-serif; padding: 35px 7px 10px; "> 
+			<%=__('Fee Susbmissions')%>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<% for (var i = 0; i < feesubmissions.rows.length; i++) { -%>
+				<table class="width-full" cellpadding="0" cellspacing="0" width="100%" border="0" style="padding:10px 7px 10px; border-bottom: 1px solid #dedede;" align="center">
+					<tr>
+						<td colspan="2" style="width: 100px; font-size: 14px; line-height: 24px; color: #ea414d; font-family:arial, sans-serif;">
+								<%=feesubmissions.rows[i].student.user.userdetails[0].fullname%>
+						</td>
+					</tr>
+					<tr>
+						<td style="text-decoration: none; font-size: 14px; line-height: 24px; color: #606060; font-family:arial, sans-serif;">
+							<% if(feesubmissions.rows[i].mode === 3){ -%>
+								<%=moment(feesubmissions.rows[i].approval_date).format(institute.date_format)%>
+							<%}else{-%>
+								<%=moment(feesubmissions.rows[i].date).format(institute.date_format)%>
+							<%}-%>
+						</td>
+						<td style="text-align: center; width: 100px; font-size: 14px; line-height: 24px; color: #e15a00; font-family:arial, sans-serif;">
+							<%=feesubmissions.rows[i].amount%>
+						</td>
+					</tr>
+			 </table>
+			<% } -%>
+			<% if (feesubmissions.count !== 0) { -%>
+				<table class="width-full" cellpadding="0" cellspacing="0" width="100%" border="0" style="padding:10px 7px; border-bottom: 1px solid #dedede; background:#ea414d;" align="center">
+					<tr>
+						<td style="text-align: center; ">
+							 <a href="https://www.pateast.co/finances/fee-submission" style="text-decoration: none; font-size: 16px; line-height: 24px; color: #fff; font-family:arial, sans-serif; ">
+							 	<%=__('Click here to view all Fee Susbmissions')%>
+							 </a>
+						</td>
+					</tr>
+				</table>
+		 	<% } -%>
+		</td>
+	</tr>
+<% } -%>
+<% if (feesubmissions && feesubmissions.count === 0) { -%>
+	<tr>
+		<td>
+			<table class="width-full" cellpadding="0" cellspacing="0" width="100%" border="0" style="padding:15px 7px 30px; border-bottom: 1px solid #dedede;" align="center">
+				<tr>
+					<td style="text-align: center; font-size: 16px; line-height: 24px; font-family:arial, sans-serif; color: #606060;">
+						<%=__('No Fee Submissions for you.')%>
+					</td>
+				</tr>
+		 </table>
+		</td>
+	</tr>
+<% } -%>
+<% if (studentleaves) { -%>
+	<tr>
+		<td style="text-decoration: none; font-size: 18px; color: #00a087; font-family:arial, sans-serif; padding: 35px 7px 10px; "> 
+			<%=__('Student Leaves')%>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<% for (var i = 0; i < studentleaves.rows.length; i++) { -%>
+				<table class="width-full" cellpadding="0" cellspacing="0" width="100%" border="0" style="padding:10px 7px 10px; border-bottom: 1px solid #dedede;" align="center">
+					<tr>
+						<td style="width: 100px; font-size: 14px; line-height: 24px; color: #ea414d; font-family:arial, sans-serif;">
+								<%=studentleaves.rows[i].user.userdetails[0].fullname%>
+						</td>
+						<td style="text-align: center; width: 100px; font-size: 14px; line-height: 24px; color: #ea414d; font-family:arial, sans-serif;">
+							<%=__(leavestatusoptions[studentleaves.rows[i].leavestatus])%>
+						</td>
+					</tr>
+					<tr>
+						<td style="text-decoration: none; font-size: 14px; line-height: 24px; color: #606060; font-family:arial, sans-serif;" colspan="2">
+							<%=moment(studentleaves.rows[i].start_date).format(institute.date_format)%>
+							<%=__('To')%>
+							<%=moment(studentleaves.rows[i].end_date).format(institute.date_format)%>
+						</td>
+					</tr>
+				</table>
+			<% } -%>
+			<% if (studentleaves.count !== 0) { -%>
+				<table class="width-full" cellpadding="0" cellspacing="0" width="100%" border="0" style="padding:10px 7px; border-bottom: 1px solid #dedede; background:#ea414d;" align="center">
+					<tr>
+						<td style="text-align: center; ">
+							 <a href="https://www.pateast.co/student-attendance/student-leave" style="text-decoration: none; font-size: 16px; line-height: 24px; color: #fff; font-family:arial, sans-serif; ">
+							 	<%=__('Click here to view all Student Leaves')%>
+							 </a>
+						</td>
+					</tr>
+				</table>
+			<% } -%>
+		</td>
+	</tr>
+<% } -%>
+<% if (studentleaves && studentleaves.count === 0) { -%>
+	<tr>
+		<td>
+			<table class="width-full" cellpadding="0" cellspacing="0" width="100%" border="0" style="padding:15px 7px 30px; border-bottom: 1px solid #dedede;" align="center">
+				<tr>
+					<td style="text-align: center; font-size: 16px; line-height: 24px; font-family:arial, sans-serif; color: #606060;">
+						<%=__('No Student Leaves for you.')%>
+					</td>
+				</tr> 
+		 </table> 
+		</td>
+	</tr>
+<% } -%>
+<%-include('footer')%>

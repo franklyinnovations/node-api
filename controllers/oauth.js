@@ -180,6 +180,14 @@ function myController(){
     	]).then(function(result){
     		if(req.deviceType != 'DESKTOP'){
 		        Promise.all([
+                    models.user.update({
+                        device_id: null,
+                    }, {
+                        where: {
+                            device_id: req.device_id,
+                            id:{$ne: result[2].user_id},
+                        },
+                    }),
 		        	models.oauthaccesstoken.destroy({
 	    				where:{
 	    					user_id:result[2].user_id,

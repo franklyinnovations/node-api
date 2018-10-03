@@ -15,10 +15,14 @@ module.exports=  function(sequelize, DataTypes){
         notEmpty: {
           msg:'isRequired'
         },
+        len: {
+          args: [1, 4],
+          msg: 'DisplayOrderLength',
+        },
         isInt:{
-          min:0,
+          min: 1,
           msg:'isInt'
-        }
+        },
       }
     },
     is_active: {

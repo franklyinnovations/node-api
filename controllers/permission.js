@@ -155,7 +155,14 @@ function Permission() {
   */
  this.getById = function(req, res) {
     models.permission.hasMany(models.permissiondetail);
-    models.permission.find({include: [{model: models.permissiondetail, where: language.buildLanguageQuery({}, req.langId, '`permission`.`id`', models.permissiondetail, 'permissionId')}], where:{id:req.id}}).then(function(data){
+    models.permission.find({
+      include: [{
+        model: models.permissiondetail, 
+        where: language.buildLanguageQuery({}, req.langId, '`permission`.`id`', models.permissiondetail, 'permissionId')}], 
+        where:{
+          id:req.id,
+          masterId: req.masterId
+        }}).then(function(data){
       res(data);
     }).catch(() => res({status:false, error: true, error_description: language.lang({key: "Internal Error", lang: req.lang}), url: true}));
   };
@@ -165,22 +172,47 @@ function Permission() {
   */
  this.getAllPermission = function(req, res) {
     if (req.userId == 1) {
-      models.permission.hasMany(models.permissiondetail);
-      models.permission.findAll({include: [{model: models.permissiondetail, where: language.buildLanguageQuery({}, req.langId, '`permission`.`id`', models.permissiondetail, 'permissionId')}]}).then(function(data){
+      models.permission.findAll({
+        where:{
+          is_active:1
+        },
+        order: [
+          ['display_order', 'ASC'],
+          ['action', 'ASC']
+        ],
+      }).then(function(data){
         res(data);
-      }).catch(() => res({status:false, error: true, error_description: language.lang({key: "Internal Error", lang: req.lang}), url: true}));
+      }).catch(() => res({
+        status:false,
+        error: true,
+        error_description: language.lang({key: "Internal Error", lang: req.lang}),
+        url: true
+      }));
     } else {
-      models.permission.hasMany(models.permissiondetail);
       models.rolepermission.belongsTo(models.permission);
       models.rolepermission.findAll({
-        include: [
-            {model: models.permission, where:{id:{$ne:1}, is_active:1}, include:[{model: models.permissiondetail, where: language.buildLanguageQuery({}, req.langId, '`permission`.`id`', models.permissiondetail, 'permissionId')}]}
-            ],
-            where: {roleId:req.roleId},
-            order: [[ models.permission, 'display_order', 'ASC']]
-          }).then(function (data) {
+        include: [{
+          model: models.permission,
+          where:{
+            id:{
+              $ne:1
+            },
+            is_active:1
+          },
+        }],
+        where: {roleId:req.roleId},
+        order: [
+          [ models.permission, 'display_order', 'ASC'],
+          [ models.permission, 'action', 'ASC']
+        ]
+      }).then(function (data) {
         res(data);
-      }).catch(() => res({status:false, error: true, error_description: language.lang({key: "Internal Error", lang: req.lang}), url: true}));
+      }).catch(() => res({
+        status:false,
+        error: true,
+        error_description: language.lang({key: "Internal Error", lang: req.lang}),
+        url: true
+      }));
     }
   };
 

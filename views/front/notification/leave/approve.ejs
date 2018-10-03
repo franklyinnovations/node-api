@@ -1,0 +1,5 @@
+<%
+	var startDate = moment(start_date).format('YYYY-MM-DD');
+	var endDate = moment(end_date).format('YYYY-MM-DD');
+-%>
+<%-__('Approve- Dear {{fullname}}, Your leave from {{start_date}} to {{end_date}} has been approved', {fullname:fullname, start_date:startDate, end_date:endDate})%>. 

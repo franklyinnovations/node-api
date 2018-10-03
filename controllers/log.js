@@ -10,7 +10,7 @@ module.exports = function (req, err) {
 	} else {
 		console.error(JSON.stringify(req));
 	}
-	console.error(err.stack || err || language.lang({key: "Unknown Error", lang: req.lang}));
+	console.error(err.stack || err || 'Unknown Error');
 	return {
 		status: false,
 		error: true,
@@ -35,10 +35,10 @@ module.exports.inspect = (...args) => {
 
 module.exports.log = (...args) => {
 	if (args.length === 1) {
-		console.log(JSON.stringify(args[0], 0, 2));
+		console.log(args[0]);
 	}
 	for (let i = 1; i < args.length; i++)
-		console.log(JSON.stringify(args[i], 0, 2));
+		console.log(args[i]);
 	return args[0];
 };
 

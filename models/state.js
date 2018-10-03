@@ -19,7 +19,11 @@ module.exports=  function(sequelize, DataTypes){
       validate: {
         notEmpty: {
           msg:'isRequired'
-        }
+        },
+        len: {
+          args: [1, 20],
+          msg: 'Length can not be more than 20.',
+        },
       }
     },
     alias: {
@@ -28,7 +32,11 @@ module.exports=  function(sequelize, DataTypes){
         notEmpty: {
           msg:'isRequired'
         },
-        isUnique: sequelize.validateIsUnique('alias', 'alreadyExist')
+        len: {
+          args: [1, 20],
+          msg: 'Length can not be more than 20.',
+        },
+        isUnique: sequelize.validateIsUnique('alias', 'isUnique')
       }
     },
     is_active: {

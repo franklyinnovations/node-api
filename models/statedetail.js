@@ -19,6 +19,10 @@ module.exports=  function(sequelize, DataTypes){
         notEmpty: {
           msg: 'isRequired'
         },
+        len: {
+          args: [1, 100],
+          msg: 'Length can not be more than 100.',
+        },
         isUnique: function(value, next){
           if(this.languageId == 1){
             var langCondition = this.languageId;
@@ -27,7 +31,7 @@ module.exports=  function(sequelize, DataTypes){
           }
           this.Model.find({where:{id:{$ne: this.id}, name:value, languageId:langCondition}}).then(function(data){
             if(data !==null){
-              return next('alreadyExist');
+              return next('isUnique');
             } else{
               return next();
             }

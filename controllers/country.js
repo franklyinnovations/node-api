@@ -90,7 +90,7 @@ function Country() {
   */
   this.list = function(req, res) {
     //var data = JSON.parse(req.body.data);
-    
+
     var setPage = req.app.locals.site.page;
     var currentPage = 1;
     var pag = 1;
@@ -119,10 +119,18 @@ function Country() {
           var modelKey = item.split('__');
           if(typeof responseData[modelKey[0]] =='undefined'){
             var col = {};
-            col[modelKey[1]] = {$like: '%' + req.query[item] + '%'};
+            if (modelKey.length === 3) {
+               col[modelKey[1]] = req.query[item];
+            } else {
+              col[modelKey[1]] = {$like: '%' + req.query[item] + '%'};
+            }
             responseData[modelKey[0]] = col;
           } else {
-            responseData[modelKey[0]][modelKey[1]] = {$like: '%' + req.query[item] + '%'};
+            if (modelKey.length === 3) {
+              responseData[modelKey[0]][modelKey[1]] = req.query[item];
+            } else {
+              responseData[modelKey[0]][modelKey[1]] = {$like: '%' + req.query[item] + '%'};
+            }
           }
         }
         callback();
@@ -150,11 +158,21 @@ function Country() {
       ],
       distinct: true,
       limit: setPage,
-      offset: pag, subQuery: false
+      offset: pag
     }).then(function(result){
       var totalData = result.count;
       var pageCount = Math.ceil(totalData / setPage);
-      res({data:result.rows, totalData: totalData, pageCount: pageCount,  pageLimit: setPage, currentPage:currentPage });
+      module.exports.getMetaInformations(reqData, function(metaResult){
+        res({
+          data:result.rows,
+          totalData: totalData,
+          pageCount: pageCount,
+          pageLimit: setPage,
+          currentPage:currentPage,
+          currencies: metaResult.currencies,
+          isoCodes: metaResult.isoCodes
+        });
+      })
     }).catch(() => res({status:false, error: true, error_description: language.lang({key: "Internal Error", lang: reqData.lang}), url: true}));
   };
 

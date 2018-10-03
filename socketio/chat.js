@@ -1,189 +1,276 @@
 'use strict';
 
-const models = require('../models'),
-	notification = require('../controllers/notification'),
-	language = require('../controllers/language');
+const models = require('../models');
 
-models.chatconsultmessage.belongsTo(models.chatconsult);
-models.doctorprofile.hasMany(models.doctorprofiledetail, {
-	as: 'doctorprofiledetails',
-	foreignKey: 'doctorProfileId',
-});
-
-const nothing = () => undefined;
+const
+	nothing = (() => undefined),
+	relatedUserSocketsQuery = 'SELECT `socket` FROM `online_users` WHERE '
+	+'`userId` NOT IN (SELECT `userId` FROM `chat_blocks` WHERE `blockedId` = :userId) '
+	+ 'AND `userId` IN (SELECT (CASE WHEN `senderId` = :userId THEN `receiverId` ELSE `senderId` END) '
+	+ 'FROM `messages` WHERE `senderId` = :userId OR `receiverId` = :userId '
+	+ 'GROUP BY `senderId`, `receiverId`)';
 
 let io;
 
-function sendMessage(message) {
-	models.chatconsult.find({
-		include: [
-			{
-				model: models.patient,
-				attributes: ['userId'],
-			},
-			{
-				model: models.doctorprofile,
-				include: [
-					{
-						model: models.doctorprofiledetail,
-						as: 'doctorprofiledetails',
-						where: language.buildLanguageQuery(
-							null,
-							1,
-							'`chatconsult.doctorprofile`.`id`',
-							models.doctorprofiledetail,
-							'doctorprofileId'
-						),
-						attributes: ['name'],
-					},
-				],
-				attributes: ['userId'],
-			},
-		],
-		where: {
-			id: message.chatconsultId,
-		},
-		attributes: ['id', 'patientId', 'doctorprofileId'],
-	})
-	.then(chatconsult => {
-		let accessDenied = chatconsult === null || 
-			(this.user.user_type === 'doctor' && chatconsult.doctorprofile.userId !== this.user.id) ||
-			(this.user.user_type === 'Patient' && chatconsult.patient.userId !== this.user.id);
-		if (accessDenied) throw 'ACCESS_DENIED';
+models.message.belongsTo(models.user, {foreignKey: 'senderId', as: 'sender'});
+models.message.belongsTo(models.user, {foreignKey: 'receiverId', as: 'receiver'});
+models.user.hasMany(models.onlineuser);
+models.user.belongsTo(models.role);
+models.role.hasMany(models.rolepermission);
+models.rolepermission.belongsTo(models.permission);
 
-		return Promise.all([
-			models.chatconsultmessage.create({
-				chatconsultId: message.chatconsultId,
-				sender: chatconsult.doctorprofile.userId === this.user.id ? 0 : 1,
-				status: 1,
-				type: message.type,
-				data: message.data,
-			}),
-			models.onlineuser.findAll({
-				where: {
-					socket: {$ne: this.id},
-					userId: this.user.id,
-				},
-				attributes: ['socket'],
-			}),
-			models.onlineuser.findAll({
-				where: {
-					userId: chatconsult.doctorprofile.userId !== this.user.id
-						? chatconsult.doctorprofile.userId : chatconsult.patient.userId,
-				},
-				attributes: ['socket'],
-			}),
-			chatconsult,
-		])
-	})
-	.then(([chatconsultmessage, senders, receivers, chatconsult]) => {
-		let data = chatconsultmessage.toJSON();
-		this.emit('message-sent', {
-			status: true,
-			uid: message.uid,
-			id: data.id,
-		});
-		for (let i = senders.length - 1; i >= 0; i--)
-			this.to(senders[i].socket).emit('my-message', data);
-		for (let i = receivers.length - 1; i >= 0; i--)
-			this.to(receivers[i].socket).emit('message', data);
-		if (receivers.length === 0)
-			sendNotification(chatconsult, chatconsultmessage, this.user.id);
-	})
-	.catch(error => this.emit({status: false, error: error}));
+function getRelatedSockets(userId) {
+	return models.sequelize.query(
+		relatedUserSocketsQuery,
+		{
+			type: models.sequelize.QueryTypes.SELECT,
+			replacements: {
+				userId
+			}
+		}
+	);
 }
 
-function messageSeen(messageId, cb = nothing) {
-	models.chatconsultmessage.findById(messageId, {
-		include: [
-			{
-				model: models.chatconsult,
-				include: [
-					{
-						model: models.patient,
-						attributes: ['userId'],
-					},
-					{
-						model: models.doctorprofile,
-						attributes: ['userId'],
-					}
-				]
-			}
-		]
-	})
-	.then(chatconsultmessage => {
-		let accessDenied = chatconsultmessage === null ||
-			(this.user.user_type === 'Patient' &&
-				chatconsultmessage.chatconsult.patient.userId !== this.user.id) ||
-			(this.user.user_type === 'doctor' &&
-				chatconsultmessage.chatconsult.doctorprofile.userId !== this.user.id);
-		if (accessDenied) throw 'ACCESS_DENIED';
-		if (chatconsultmessage.status >= 3) return;
-		chatconsultmessage.status = 3;
-		return chatconsultmessage.save()
-		.then(() => models.onlineuser.findAll({
+function canSendMessage(sender, receiverId) {
+	return Promise.all([
+		models.user.findOne({
 			where: {
-				userId: this.user.user_type === 'Patient' ?
-					chatconsultmessage.chatconsult.doctorprofile.userId :
-					chatconsultmessage.chatconsult.patient.userId
+				id: receiverId,
+				is_active: 1
 			},
-			attributes: ['socket'],
-		}))
-		.then(onlineusers => {
+			attributes: ['user_type', 'masterId']
+		}),
+		models.chatblock.count({
+			where: {
+				userId: sender.id,
+				blockedId: receiverId
+			}
+		})
+	])
+	.then(([receiver, blocked]) => {
+		if (!receiver) throw 3;
+		if (blocked) throw 4;
+		return models.user.findOne({
+			where: {id: sender.id},
+			include: [{
+				model: models.role,
+				attributes: ['id'],
+				include: [{
+					model: models.rolepermission,
+					attributes: ['roleId'],
+					include: [{
+						model: models.permission,
+						attributes: ['id'],
+						where: {model: 'chat', 'action': receiver.user_type}
+					}]
+				}],
+				on: ["`user`.`roleId` = `role`.`id` OR \
+					(`user`.`user_type` = 'parent' AND `role`.`masterId` = ? \
+					AND `role`.`slug` = 'parent')", [receiver.masterId]]
+				}]
+		});
+	})
+	.then(sender => (sender !== null));
+}
+
+function sendMessage(message) {
+	canSendMessage(this.user, message.receiverId)
+	.then((can) => {
+		if (! can) throw 2;
+		return models.message.create({
+			senderId: this.user.id,
+			receiverId: message.receiverId,
+			type: message.type || 0,
+			masterId: this.user.masterId,
+			data: message.data || '',
+			msg_status: 1,
+		});
+	})
+	.then(instance => {
+		this.emit('message-sent', {
+			status: 1, id: instance.id, uid: message.uid, createdAt: instance.createdAt
+		});
+		models.onlineuser.findAll({where: {userId: this.user.id}, attributes: ['id', 'socket']})
+		.then(devices => {
+			if (devices.length === 0) return;
+			for (let i = devices.length - 1; i >= 0; i--) {
+				this.to(devices[i].socket).emit('my-message', instance);
+			}
+		})
+		.catch(console.log);
+
+		models.chatblock.count({
+			where: {
+				userId: instance.receiverId,
+				blockedId: this.user.id
+			}
+		}).then(count => {
+			if (count !== 0) {
+				instance.msg_status = 4;
+				return instance.save();
+			} else {
+				return models.onlineuser.findAll({where: {userId: instance.receiverId}})
+				.then(devices => {
+					if (devices.length === 0) return;
+					instance = instance.toJSON();
+					for (let i = devices.length - 1; i >= 0; i--) {
+						this.to(devices[i].socket).emit('message', instance);
+					}
+				});
+			}
+		});
+	})
+	.catch(err => {
+		this.emit(
+			'message-sent', {
+				status: 0,
+				error: typeof err === 'number' ? err : 0,
+				uid: message.uid
+			}
+		)
+	});
+}
+
+function startedTyping(receiverId) {
+	models.onlineuser.findAll({where: {userId: receiverId}})
+	.then(devices => {
+		for (let i = devices.length - 1; i >= 0; i--) {
+			this.to(devices[i].socket).emit('started-typing', this.user.id);
+		}
+	});
+}
+
+function stoppedTyping(receiverId) {
+	models.onlineuser.findAll({where: {userId: receiverId}})
+	.then(devices => {
+		for (let i = devices.length - 1; i >= 0; i--) {
+			this.to(devices[i].socket).emit('stopped-typing', this.user.id);
+		}
+	});
+}
+
+function messageSeen(messageId) {
+	models.message.findOne({
+		where: {id: messageId},
+		attributes: ['id', 'msg_status'],
+		include: [{
+			model: models.user,
+			attributes: ['id'],
+			include: [{
+				model: models.onlineuser,
+				attributes: ['id', 'socket']
+			}],
+			as: 'sender'
+		}]
+	})
+	.then(message => {
+		if (!message) return;
+		message.msg_status = 3;
+		message.save().then(() => {
+			let onlineusers = message.sender.onlineusers;
 			for (let i = onlineusers.length - 1; i >= 0; i--) {
 				this.to(onlineusers[i].socket).emit('seen', messageId);
 			}
-		});
-	})
-	.catch(cb);
+		})
+		.catch(console.log);
+	});
 }
 
-function messageReceived(messageId, cb = nothing) {
-	models.chatconsultmessage.findById(messageId, {
-		include: [
-			{
-				model: models.chatconsult,
-				include: [
-					{
-						model: models.patient,
-						attributes: ['userId'],
-					},
-					{
-						model: models.doctorprofile,
-						attributes: ['userId'],
-					}
-				],
-				attributes: ['name'],
-			}
-		]
+function messageReceived(messageId) {
+	models.message.findOne({
+		where: {id: messageId, msg_status: {$lt: 2}},
+		attributes: ['id', 'msg_status'],
+		include: [{
+			model: models.user,
+			attributes: ['id'],
+			include: [{
+				model: models.onlineuser,
+				attributes: ['id', 'socket']
+			}],
+			as: 'sender'
+		}]
 	})
-	.then(chatconsultmessage => {
-		let accessDenied = chatconsultmessage === null ||
-			(this.user.user_type === 'Patient' &&
-				chatconsultmessage.chatconsult.patient.userId !== this.user.id) ||
-			(this.user.user_type === 'doctor' &&
-				chatconsultmessage.chatconsult.doctorprofile.userId !== this.user.id);
-		if (accessDenied) throw 'ACCESS_DENIED';
-		if (chatconsultmessage.status >= 2) return;
-		chatconsultmessage.status = 2;
-
-		return chatconsultmessage.save()
-		.then(() => models.onlineuser.findAll({
-			where: {
-				userId: this.user.user_type === 'Patient' ?
-					chatconsultmessage.chatconsult.doctorprofile.userId :
-					chatconsultmessage.chatconsult.patient.userId
-			},
-			attributes: ['socket'],
-		}))
-		.then(onlineusers => {
+	.then(message => {
+		if (!message) return;
+		message.msg_status = 2;
+		message.save().then(() => {
+			let onlineusers = message.sender.onlineusers;
 			for (let i = onlineusers.length - 1; i >= 0; i--) {
 				this.to(onlineusers[i].socket).emit('received', messageId);
 			}
 		})
-		
+		.catch(console.log);
+	});
+}
+
+function removeMessage(messageId) {
+	models.message.findOne({
+		where: {
+			id: messageId,
+			senderId: this.user.id
+		}
 	})
-	.catch(cb);
+	.then(instance => {
+		if (!instance) return {status: 1};
+		instance.msg_status = 5;
+		return instance.save()
+		.then(() => {
+			models.onlineuser.findAll({where: {userId: this.user.id}, attributes: ['id', 'socket']})
+			.then(devices => {
+				if (devices.length === 0) return;
+				for (let i = devices.length - 1; i >= 0; i--) {
+					this.to(devices[i].socket).emit('remove-my-message', instance);
+				}
+			})
+			.catch(console.log);
+
+			models.onlineuser.findAll({where: {userId: message.receiverId}})
+			.then(devices => {
+				if (devices.length === 0) return;
+				for (let i = devices.length - 1; i >= 0; i--) {
+					this.to(devices[i].socket).emit('remove-message', instance);
+				}
+			})
+			.catch(console.log);
+		});
+	})
+	.then(cb)
+	.catch(() => cb({status: 0, error: 0}));
+}
+
+function socketDisconnect() {
+	models.onlineuser.destroy({where: {socket: this.id}})
+	.then(() => models.onlineuser.count({where: {userId: this.user.id}}))
+	.then(count => {
+		if (count !== 0) return;
+		getRelatedSockets(this.user.id)
+		.then(users => {
+			for (let i = users.length - 1; i >= 0; i--) {
+				io.sockets.to(users[i].socket).emit('offline', this.user.id);
+			}
+		});
+	})
+	.catch(console.log);
+}
+
+function isOnline(ids, cb) {
+	if (! (ids instanceof Array)) {
+		cb([]);
+		return;
+	}
+	models.sequelize.query(
+		'SELECT `userId` FROM `online_users` WHERE `userId` IN (:ids) AND `userId`\
+		NOT IN (SELECT `userId` FROM `chat_blocks` WHERE `blockedId` = :userId) \
+		GROUP BY `userId`',
+		{
+			type: models.sequelize.QueryTypes.SELECT,
+			replacements: {
+				ids,
+				userId: this.user.id
+			}
+		}
+	)
+	.then(cb);
 }
 
 function getTime(cb) {
@@ -193,117 +280,81 @@ function getTime(cb) {
 		time: Date.parse(results[0].CURRENT_TIMESTAMP),
 		status: true
 	}))
-	.catch(cb);
+	.catch(console.log);
 }
 
-function disconnect() {
+function block(userId, cb) {
+	cb = cb || nothing;
+	models.chatblock.upsert({
+		userId: this.user.id,
+		masterId: this.user.masterId,
+		blockedId: userId
+	})
+	.then(() => cb({status: true}))
+	.catch(console.log);
+}
+
+function unblock(userId, cb) {
+	cb = cb || nothing;
+	models.chatblock.destroy({
+		where: {
+			userId: this.user.id,
+			masterId: this.user.masterId,
+			blockedId: userId
+		}
+	})
+	.then(() => cb({status: true}))
+	.catch(console.log);
+}
+
+function isBlocked(userId, cb) {
+	cb = cb || nothing;
+	models.chatblock.findOne({
+		where: {
+			userId: this.user.id,
+			blockedId: userId
+		}
+	})
+	.then(blocked => cb({status: true, blocked: blocked !== null ? 1 : 0}))
+	.catch(console.log);
+}
+
+function socketError() {
 	models.onlineuser.destroy({where: {socket: this.id}});
-}
-
-function sendNotification(chatconsult, chatconsultmessage, senderId) {
-	if (chatconsultmessage.sender === 0) {
-		models.patient.find({
-			include: [
-				{
-					model: models.user,
-					where: {
-						is_notification: 1,
-					},
-					attributes: ['device_id'],
-				}
-			],
-			where: {
-				id: chatconsult.patientId,
-			},
-			attributes: ['id', 'is_chat_notification'],
-		})
-		.then(patient => {
-			if (patient && patient.user && patient.user.device_id && patient.is_chat_notification)
-				notification.sendWithoutSaving(
-					[patient.user.device_id],
-					'front/notification/chat/message',
-					{
-						chatconsultmessage,
-						senderName: chatconsult.doctorprofile.doctorprofiledetails[0].name,
-					},
-					{
-						data: {
-							senderId,
-							type: 'chatconsult-message',
-						},
-						notification: {
-							tag: `wikicare-chatconsult-${chatconsult.id}`,
-						},
-						collapse_key: `wikicare-chatconsult-${chatconsult.id}`,
-					}
-				)
-				.then(console.log)
-				.catch(console.log);
-		});
-	} else {
-		models.doctorprofile.find({
-			include: [
-				{
-					model: models.user,
-					where: {
-						is_notification: 1,
-					},
-					attributes: ['device_id'],
-				},
-				{
-					model: models.onlineconsultsetting,
-					where: {
-						available_for_consult: 1,
-						consultation_fee: {$ne: null},
-						chat_notification: 1,
-					},
-					attributes: [],
-				},
-			],
-			where: {
-				id: chatconsult.doctorprofileId,
-			},
-		})
-		.then(doctorprofile => {
-			if (doctorprofile && doctorprofile.user && doctorprofile.user.device_id)
-				notification.sendWithoutSaving(
-					[doctorprofile.user.device_id],
-					'front/notification/chat/message',
-					{
-						chatconsultmessage,
-						senderName: chatconsult.name,
-					},
-					{
-						data: {
-							senderId,
-							type: 'chatconsult-message',
-						},
-						notification: {
-							tag: `wikicare-chatconsult-${chatconsult.id}`,
-						},
-						collapse_key: `wikicare-chatconsult-${chatconsult.id}`,
-					}
-				)
-				.then(console.log)
-				.catch(console.log);
-		})
-	}
 }
 
 module.exports = function (_io) {
 	io = _io;
 	return function (socket) {
-		if (! socket.user) return;
-		models.onlineuser.create({
-			userId: socket.user.id,
-			socket: socket.id
+		models.onlineuser.count({where: {userId: socket.user.id}})
+		.then(count => {
+			if (count !== 0) return;
+			return getRelatedSockets(socket.user.id)
+			.then(users => {
+				for (let i = users.length - 1; i >= 0; i--) {
+						socket.to(users[i].socket).emit('online', socket.user.id);
+				}
+			});
 		})
-		.then(() => {
+		.then(() => models.onlineuser.create({
+			userId: socket.user.id,
+			masterId: socket.user.masterId,
+			token: socket.handshake.headers.token,
+			socket: socket.id
+		})).then(() => {
+			socket.on('disconnect', socketDisconnect);
+			socket.on('error', socketError);
 			socket.on('send-message', sendMessage);
+			socket.on('started-typing', startedTyping);
+			socket.on('stopped-typing', stoppedTyping);
 			socket.on('seen', messageSeen);
 			socket.on('received', messageReceived);
+			socket.on('remove-message', removeMessage);
+			socket.on('is-online', isOnline);
 			socket.on('get-time', getTime);
-			socket.on('disconnect', disconnect);
+			socket.on('block', block);
+			socket.on('unblock', unblock);
+			socket.on('is-blocked', isBlocked);
 		});
 	};
-}
+};

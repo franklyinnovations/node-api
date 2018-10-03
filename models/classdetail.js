@@ -19,6 +19,10 @@ module.exports=  function(sequelize, DataTypes){
         notEmpty: {
           msg: 'isRequired'
         },
+        len: {
+          args: [1, 100],
+          msg: 'Length can not be more than 100.',
+        },
         isExist: function(value , next){
           if(this.languageId == 1){
             var langCondition = this.languageId;
